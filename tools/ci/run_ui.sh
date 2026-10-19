@@ -39,7 +39,7 @@ adb logcat -c
 restart; wait_act LoginActivity
 shot login 1
 # Lien M3U complet collé dans le champ serveur (les identifiants se remplissent seuls)
-adb shell input text "http://10.0.2.2:8000/get.php?username=demo\\\&password=demo\\\&type=m3u"
+adb shell "input text 'http://10.0.2.2:8000/get.php?username=demo&password=demo&type=m3u'"
 shot login_lien_m3u 1
 k 66
 wait_act ProfilesActivity && shot profils 4
