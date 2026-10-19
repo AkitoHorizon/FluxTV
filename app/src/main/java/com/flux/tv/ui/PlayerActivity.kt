@@ -381,6 +381,7 @@ class PlayerActivity : BaseActivity() {
             updateTitles()
             updateSeekUi(pendingSeek)
             controls.fade(true, 200)
+            subtitlesAbove(true)
         }
         val target = focus ?: currentFocus?.takeIf { isInside(it, controls) } ?: ctlPlay
         target.requestFocus()
@@ -391,6 +392,12 @@ class PlayerActivity : BaseActivity() {
         handler.removeCallbacks(hideControlsRunnable)
         if (pendingSeek != null) commitSeek()
         controls.fade(false, 250)
+        subtitlesAbove(false)
+    }
+
+    /** Comme sur Netflix : les sous-titres remontent au-dessus de la barre de lecture quand elle est affichée. */
+    private fun subtitlesAbove(controlsShown: Boolean) {
+        playerView.subtitleView?.setBottomPaddingFraction(if (controlsShown) 0.30f else 0.08f)
     }
 
     private fun scheduleHide() {
@@ -802,7 +809,9 @@ class PlayerActivity : BaseActivity() {
             retries = 0; failed = false; retry(null); return true
         }
         when (code) {
-            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY, KeyEvent.KEYCODE_MEDIA_PAUSE -> { togglePlay(); showControls(); return true }
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> { togglePlay(); showControls(); return true }
+            KeyEvent.KEYCODE_MEDIA_PLAY -> { if (!p.playWhenReady) togglePlay(); showControls(); return true }
+            KeyEvent.KEYCODE_MEDIA_PAUSE -> { if (p.playWhenReady) togglePlay(); showControls(); return true }
             KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> { showControls(seek); scrub(1, repeat); return true }
             KeyEvent.KEYCODE_MEDIA_REWIND -> { showControls(seek); scrub(-1, repeat); return true }
             KeyEvent.KEYCODE_MEDIA_NEXT -> { goNext(auto = false); return true }

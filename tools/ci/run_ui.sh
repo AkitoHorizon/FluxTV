@@ -79,7 +79,7 @@ k 23; wait_act PlayerActivity; shot serie_lecture 8
 qa serie
 k 20; k 22 22 22; k 23; shot serie_panneau_pistes 2
 k 22; k 20; k 23; shot serie_soustitres_actives 4
-k 4; sleep 1; rep 22 30; shot serie_saut_fin 3
+k 4; sleep 1; k 126; sleep 2; rep 22 30; k 126; shot serie_saut_fin 3
 shot serie_episode_suivant 12
 shot serie_enchainement 14
 k 4; k 4; k 4; wait_act DetailActivity; shot fiche_serie_progression 3
