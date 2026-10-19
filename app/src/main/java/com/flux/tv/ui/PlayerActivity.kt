@@ -197,6 +197,12 @@ class PlayerActivity : BaseActivity() {
         if (queue.isNotEmpty()) start()
     }
 
+    override fun onPause() {
+        // Avant le retour à la fiche : sa onResume() passe avant notre onStop()
+        savePosition()
+        super.onPause()
+    }
+
     override fun onStop() {
         savePosition()
         release()
@@ -245,8 +251,9 @@ class PlayerActivity : BaseActivity() {
         val p = player ?: return
         if (live) return
         val mi = p.currentMediaItem ?: return
-        val dur = if (p.duration == C.TIME_UNSET) 0L else p.duration
-        Prefs.savePos(mi.mediaId, p.currentPosition, dur)
+        // Durée inconnue (vidéo pas encore chargée) : on ne touche pas à la reprise existante
+        if (p.duration == C.TIME_UNSET || p.duration <= 0) return
+        Prefs.savePos(mi.mediaId, p.currentPosition, p.duration)
         index = p.currentMediaItemIndex
         Repo.queueIndex = index
         Repo.resume = true

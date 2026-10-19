@@ -121,12 +121,33 @@ class CardAdapter(private val listener: CardListener) : RecyclerView.Adapter<Car
                 val pad = if (live) 16.dp else 0
                 h.img.setPadding(pad, pad, pad, pad)
                 Img.card(h.img, it.icon, Cards.POSTER_W.dp, Cards.height(CardStyle.POSTER))
-                if (it.icon == null || live) { h.shade.show(true); h.textBox.show(true) }
+                if (it.icon == null && !live) {
+                    // Pas d'affiche : dégradé + titre en typo d'affiche
+                    h.frame.background = posterFallback(it)
+                    h.title.typeface = Fonts.display
+                    h.title.textSize = 19f
+                    h.title.maxLines = 4
+                    h.textBox.show(true)
+                } else {
+                    h.frame.setBackgroundResource(R.drawable.bg_card)
+                    h.title.typeface = Fonts.semibold
+                    h.title.textSize = 13f
+                    h.title.maxLines = 2
+                    if (live) { h.shade.show(true); h.textBox.show(true) }
+                }
                 if (h.style == CardStyle.POSTER && it.isNew && !live) h.badgeNew.show(true)
                 else if (h.style == CardStyle.POSTER && Repo.isTop10(it)) h.badgeTop.show(true)
                 if (it.kind == Kind.MOVIE) bindProgress(h, it.key)
             }
         }
+    }
+
+    private fun posterFallback(it: Item): android.graphics.drawable.Drawable {
+        val c = com.flux.tv.data.Prefs.PROFILE_COLORS[(it.name.hashCode() and 0x7fffffff) % com.flux.tv.data.Prefs.PROFILE_COLORS.size]
+        return android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+            intArrayOf(Ambient.blend(c, 0xFF000000.toInt(), 0.45f), 0xFF151515.toInt()),
+        ).apply { cornerRadius = 6f.dpf }
     }
 
     private fun bindWide(h: VH, it: Item) {

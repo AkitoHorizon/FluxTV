@@ -75,7 +75,7 @@ def series_info(sid):
     for s in range(1, 4):
         eps[str(s)] = [{"id": f"{sid}{s}{e:02d}", "episode_num": e, "season": s, "container_extension": "mkv",
                         "title": f"Série Test - S{s:02d}E{e:02d} - Épisode {e} de la saison {s}",
-                        "info": {"movie_image": f"{HOST}/img/episode/{s*10+e}.png", "plot": f"Résumé de l'épisode {e}.", "duration": "00:01:30"}}
+                        "info": {"movie_image": f"{HOST}/img/episode/{s*10+e}.png", "plot": f"Résumé de l'épisode {e}.", "duration": "00:05:30"}}
                        for e in range(1, 7)]
     return {"info": {"name": series[i-1]["name"], "plot": series[i-1]["plot"], "genre": "Drame, Thriller", "cast": "Acteur Un, Actrice Deux",
                      "director": "Réalisatrice Test", "rating": "7.5", "releaseDate": "2021-01-01", "backdrop_path": [f"{HOST}/img/backdrop/{i}.png"],

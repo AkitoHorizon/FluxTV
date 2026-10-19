@@ -124,8 +124,10 @@ class MainActivity : BaseActivity(), CardListener {
         val h = resources.displayMetrics.heightPixels
         for (id in intArrayOf(R.id.heroImage, R.id.heroVignette, R.id.fadeLeft)) findViewById<View>(id).layoutParams.height = (h * 0.8f).toInt()
         (findViewById<View>(R.id.fadeBottom).layoutParams as FrameLayout.LayoutParams).apply {
-            height = (h * 0.42f).toInt(); topMargin = (h * 0.39f).toInt()
+            topMargin = (h * 0.36f).toInt(); height = h - topMargin     // couvre aussi le débord du zoom Ken Burns
         }
+        // En-tête : ~55 % de l'écran mais borné, pour garder 1,5 rangée visible sur toutes les densités
+        findViewById<View>(R.id.header).layoutParams.height = (h * 0.55f).toInt().coerceIn(270.dp, 330.dp)
         ambient = Ambient(root, findViewById(R.id.fadeLeft), findViewById(R.id.fadeBottom))
 
         rowsView.layoutManager = FocusAlignLayoutManager(this, RecyclerView.VERTICAL)
