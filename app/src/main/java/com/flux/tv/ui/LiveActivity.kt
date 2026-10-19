@@ -1,6 +1,7 @@
 package com.flux.tv.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -190,6 +191,7 @@ class LiveActivity : BaseActivity() {
                     previewSpinner.show(state == Player.STATE_BUFFERING)
                 }
                 override fun onRenderedFirstFrame() {
+                    Log.i("FluxQA", "preview firstFrame")
                     previewLogo.fade(false); liveBadge.fade(true)
                 }
                 override fun onPlayerError(error: PlaybackException) {

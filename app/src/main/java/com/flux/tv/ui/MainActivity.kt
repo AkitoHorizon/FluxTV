@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -330,6 +331,7 @@ class MainActivity : BaseActivity(), CardListener {
                     else -> myListRows() to emptyList()
                 }
                 loadedGen = gen; loadedProfile = prof
+                Log.i("FluxQA", "section=$s rows=${rows.size} featured=${feat.size}")
                 skeleton.show(false)
                 adapter.submit(rows, rowsView)
                 rowsView.scrollToPosition(0)
@@ -350,6 +352,7 @@ class MainActivity : BaseActivity(), CardListener {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                Log.e("FluxQA", "section load failed", e)
                 skeleton.show(false)
                 showEmpty("Impossible de charger le catalogue", e.message ?: e.javaClass.simpleName, retry = true)
             }

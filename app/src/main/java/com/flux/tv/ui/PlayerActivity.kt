@@ -8,6 +8,7 @@ import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -253,6 +254,7 @@ class PlayerActivity : BaseActivity() {
 
     private val listener = object : Player.Listener {
         override fun onPlaybackStateChanged(state: Int) {
+            Log.i("FluxQA", "player state=$state live=$live item=${player?.currentMediaItem?.mediaId}")
             spinner.show(state == Player.STATE_BUFFERING)
             if (state == Player.STATE_READY) {
                 retries = 0; failed = false
@@ -265,6 +267,7 @@ class PlayerActivity : BaseActivity() {
         }
 
         override fun onRenderedFirstFrame() {
+            Log.i("FluxQA", "player firstFrame live=$live")
             poster.fade(false, 500)
         }
 
@@ -275,6 +278,7 @@ class PlayerActivity : BaseActivity() {
         }
 
         override fun onPlayerError(error: PlaybackException) {
+            Log.e("FluxQA", "player error ${error.errorCodeName}", error)
             if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
                 player?.seekToDefaultPosition(); player?.prepare(); return
             }
