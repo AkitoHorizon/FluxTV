@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="58dp"
+    android:layout_marginBottom="3dp"
+    android:background="@drawable/list_item_bg"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingEnd="18dp">
+
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:layout_marginEnd="16dp"
+        android:duplicateParentState="true"
+        android:tint="@color/list_fg"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:duplicateParentState="true"
+        android:fontFamily="@font/inter_semibold"
+        android:singleLine="true"
+        android:textColor="@color/list_fg"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:duplicateParentState="true"
+        android:ellipsize="end"
+        android:fontFamily="@font/inter_medium"
+        android:maxWidth="320dp"
+        android:singleLine="true"
+        android:textColor="@color/list_fg"
+        android:textSize="14sp" />
+</LinearLayout>

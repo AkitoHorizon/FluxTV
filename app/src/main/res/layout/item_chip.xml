@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="38dp"
+    android:layout_marginEnd="10dp"
+    android:background="@drawable/chip_bg"
+    android:clickable="true"
+    android:focusable="true"
+    android:fontFamily="@font/inter_semibold"
+    android:gravity="center"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:textColor="@color/chip_fg"
+    android:textSize="14sp" />

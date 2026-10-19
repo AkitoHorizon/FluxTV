@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <!-- Visuel plein cadre (Ken Burns) + fondus teintés par la couleur d'ambiance -->
+    <ImageView
+        android:id="@+id/heroImage"
+        android:layout_width="match_parent"
+        android:layout_height="400dp"
+        android:layout_gravity="top|end"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:id="@+id/heroVignette"
+        android:layout_width="match_parent"
+        android:layout_height="400dp"
+        android:background="@drawable/vignette" />
+
+    <View
+        android:id="@+id/fadeLeft"
+        android:layout_width="match_parent"
+        android:layout_height="400dp" />
+
+    <View
+        android:id="@+id/fadeBottom"
+        android:layout_width="match_parent"
+        android:layout_height="200dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginStart="@dimen/nav_collapsed"
+        android:clipChildren="false"
+        android:orientation="vertical">
+
+        <!-- En-tête : billboard (à la une) ou infos du titre sélectionné -->
+        <LinearLayout
+            android:id="@+id/header"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="0.55"
+            android:gravity="bottom"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/gutter"
+            android:paddingBottom="12dp">
+
+            <LinearLayout
+                android:id="@+id/heroInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/display_bold"
+                        android:text="F"
+                        android:textColor="@color/red"
+                        android:textSize="26sp" />
+
+                    <TextView
+                        android:id="@+id/heroKicker"
+                        style="@style/Text.Kicker"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:letterSpacing="0.1"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/heroTitle"
+                    style="@style/Text.Display"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxWidth="600dp"
+                    android:maxLines="2"
+                    android:lineSpacingMultiplier="0.88"
+                    android:textSize="54sp" />
+
+                <TextView
+                    android:id="@+id/heroMeta"
+                    style="@style/Text.Meta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:singleLine="true"
+                    android:textColor="#D9D9D6"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/heroPlot"
+                    style="@style/Text.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:ellipsize="end"
+                    android:maxWidth="520dp"
+                    android:maxLines="2"
+                    android:shadowColor="#99000000"
+                    android:shadowRadius="6" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/heroButtons"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="invisible">
+
+                <LinearLayout android:id="@+id/btnPlay" style="@style/PillBtn">
+                    <ImageView style="@style/PillIcon" android:src="@drawable/ic_play" />
+                    <TextView android:id="@+id/btnPlayText" style="@style/PillText" android:text="Lecture" />
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/btnInfo" style="@style/PillBtn">
+                    <ImageView style="@style/PillIcon" android:src="@drawable/ic_info" />
+                    <TextView style="@style/PillText" android:text="Plus d'infos" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/dots"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="20dp"
+                    android:orientation="horizontal" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="0.45"
+            android:clipChildren="false">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rows"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingBottom="400dp"
+                android:scrollbars="none" />
+
+            <com.flux.tv.ui.SkeletonView
+                android:id="@+id/skeleton"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <LinearLayout
+                android:id="@+id/emptyBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="@dimen/gutter"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/emptyTitle"
+                    style="@style/Text.Title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/emptyText"
+                    style="@style/Text.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:maxWidth="520dp"
+                    android:textColor="@color/text2" />
+
+                <LinearLayout
+                    android:id="@+id/retry"
+                    style="@style/PillBtn"
+                    android:layout_marginTop="18dp">
+                    <ImageView style="@style/PillIcon" android:src="@drawable/ic_restart" />
+                    <TextView style="@style/PillText" android:text="Réessayer" />
+                </LinearLayout>
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- Menu latéral : rail d'icônes qui s'ouvre au focus -->
+    <View
+        android:id="@+id/navScrim"
+        android:layout_width="620dp"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:background="@drawable/nav_scrim" />
+
+    <View
+        android:layout_width="140dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/nav_rail" />
+
+    <LinearLayout
+        android:id="@+id/nav"
+        android:layout_width="@dimen/nav_collapsed"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingTop="26dp"
+        android:paddingBottom="22dp">
+
+        <TextView
+            android:id="@+id/navLogo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="22dp"
+            android:layout_marginBottom="22dp"
+            android:fontFamily="@font/display_bold"
+            android:text="F"
+            android:textColor="@color/red"
+            android:textSize="32sp" />
+
+        <LinearLayout
+            android:id="@+id/navItems"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical" />
+
+        <LinearLayout
+            android:id="@+id/navBottom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/busy"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000"
+        android:clickable="true"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center"
+            android:indeterminateDrawable="@drawable/spinner_red" />
+    </FrameLayout>
+</FrameLayout>

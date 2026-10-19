@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_deep">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/glow_red" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="72dp"
+        android:paddingEnd="72dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/display_bold"
+                android:letterSpacing="0.04"
+                android:shadowColor="#80E50914"
+                android:shadowRadius="30"
+                android:text="FLUX"
+                android:textColor="@color/red"
+                android:textSize="96sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:fontFamily="@font/inter_bold"
+                android:lineSpacingExtra="4dp"
+                android:text="Films, séries et TV en direct.\nComme au cinéma, depuis votre canapé."
+                android:textColor="@color/text"
+                android:textSize="24sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Connectez votre abonnement IPTV pour commencer."
+                android:textColor="@color/text2"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="400dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_panel"
+            android:orientation="vertical"
+            android:padding="32dp">
+
+            <TextView
+                style="@style/Text.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Connexion"
+                android:textSize="26sp" />
+
+            <EditText
+                android:id="@+id/server"
+                style="@style/Field"
+                android:layout_marginTop="22dp"
+                android:hint="Adresse du serveur"
+                android:imeOptions="actionNext"
+                android:inputType="textUri" />
+
+            <EditText
+                android:id="@+id/user"
+                style="@style/Field"
+                android:layout_marginTop="12dp"
+                android:hint="Nom d'utilisateur"
+                android:imeOptions="actionNext"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/pass"
+                style="@style/Field"
+                android:layout_marginTop="12dp"
+                android:hint="Mot de passe"
+                android:imeOptions="actionDone"
+                android:inputType="textPassword" />
+
+            <TextView
+                android:id="@+id/error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="#33E87C03"
+                android:padding="10dp"
+                android:textColor="#FFB86B"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:id="@+id/login"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginTop="22dp"
+                android:background="@drawable/btn_red"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/loginText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:duplicateParentState="true"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Se connecter"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <ProgressBar
+                    android:id="@+id/busy"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_gravity="center"
+                    android:indeterminateDrawable="@drawable/spinner_white"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:lineSpacingExtra="2dp"
+                android:text="Astuce : collez un lien M3U complet (get.php?username=…) dans le champ serveur, les identifiants se remplissent seuls."
+                android:textColor="@color/text3"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

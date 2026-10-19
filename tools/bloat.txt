@@ -1,0 +1,56 @@
+# Applis désactivées sur le X96 mini par install.bat / install.sh
+# (désactivation réversible : restore.bat / restore.sh les réactive)
+# Une ligne = un nom de paquet. Ajoutez "#" devant une ligne pour la garder.
+
+# --- Lanceurs d'origine (remplacés par Flux TV) ---
+com.droidlogic.mboxlauncher
+com.droidlogic.launcher
+com.amlogic.launcher
+com.android.launcher
+com.android.launcher3
+com.google.android.leanbacklauncher
+com.google.android.tvlauncher
+
+# --- Applis préinstallées inutiles pour l'IPTV ---
+com.android.browser
+com.android.email
+com.android.calendar
+com.android.contacts
+com.android.deskclock
+com.android.calculator2
+com.android.gallery3d
+com.android.music
+com.android.soundrecorder
+com.android.camera2
+com.android.quicksearchbox
+com.android.printspooler
+com.android.bips
+com.android.htmlviewer
+com.android.wallpaper.livepicker
+com.android.dreams.basic
+com.android.dreams.phototable
+com.android.galaxy4
+com.android.noisefield
+com.android.phasebeam
+com.android.magicsmoke
+com.android.musicvis
+com.droidlogic.videoplayer
+com.droidlogic.imageplayer
+com.droidlogic.musicplayer
+com.droidlogic.mediacenter
+com.droidlogic.miracast
+com.droidlogic.FileBrower
+com.droidlogic.appinstall
+com.droidlogic.otaupgrade
+com.estrongs.android.pop
+com.google.android.youtube.tv
+com.google.android.youtube
+org.xbmc.kodi
+
+# --- Facultatif : enlevez le "#" pour désactiver aussi ---
+# com.android.vending
+# com.google.android.music
+
+# NE JAMAIS AJOUTER : com.android.settings, com.android.tv.settings,
+# com.android.systemui, com.google.android.gms, com.android.inputmethod.latin,
+# com.droidlogic (services système), com.android.providers.*

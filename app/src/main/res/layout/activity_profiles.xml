@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_deep">
+
+    <View
+        android:id="@+id/glow"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:background="@drawable/glow_red" />
+
+    <TextView
+        android:id="@+id/introLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:fontFamily="@font/display_bold"
+        android:letterSpacing="0.04"
+        android:shadowColor="#B3E50914"
+        android:shadowRadius="40"
+        android:text="FLUX"
+        android:textColor="@color/red"
+        android:textSize="130sp" />
+
+    <TextView
+        android:id="@+id/smallLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="28dp"
+        android:alpha="0"
+        android:fontFamily="@font/display_bold"
+        android:letterSpacing="0.04"
+        android:text="FLUX"
+        android:textColor="@color/red"
+        android:textSize="34sp" />
+
+    <LinearLayout
+        android:id="@+id/content"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:alpha="0"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/inter_medium"
+            android:text="Qui regarde ?"
+            android:textColor="@color/text"
+            android:textSize="36sp" />
+
+        <LinearLayout
+            android:id="@+id/profileRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            android:padding="12dp" />
+
+        <TextView
+            android:id="@+id/manage"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginTop="36dp"
+            android:background="@drawable/btn_outline"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="@font/inter_semibold"
+            android:gravity="center"
+            android:letterSpacing="0.18"
+            android:paddingStart="26dp"
+            android:paddingEnd="26dp"
+            android:text="GÉRER LES PROFILS"
+            android:textColor="@color/outline_fg"
+            android:textSize="13sp" />
+    </LinearLayout>
+</FrameLayout>

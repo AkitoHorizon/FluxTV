@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <ImageView
+        android:id="@+id/backdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
+
+    <View android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/vignette" />
+    <View android:id="@+id/fadeLeft" android:layout_width="match_parent" android:layout_height="match_parent" />
+    <View android:id="@+id/fadeBottom" android:layout_width="match_parent" android:layout_height="match_parent" />
+
+    <ScrollView
+        android:id="@+id/scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/page"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:orientation="vertical"
+            android:paddingTop="60dp"
+            android:paddingBottom="40dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="56dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/display_bold"
+                    android:text="F"
+                    android:textColor="@color/red"
+                    android:textSize="28sp" />
+
+                <TextView
+                    android:id="@+id/kicker"
+                    style="@style/Text.Kicker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:letterSpacing="0.1"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/title"
+                style="@style/Text.Display"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="56dp"
+                android:ellipsize="end"
+                android:lineSpacingMultiplier="0.88"
+                android:maxWidth="680dp"
+                android:maxLines="2"
+                android:textSize="60sp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="56dp"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/meta"
+                    style="@style/Text.Meta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:textColor="#D9D9D6"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/hd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/badge_outline"
+                    android:fontFamily="@font/inter_bold"
+                    android:paddingStart="5dp"
+                    android:paddingTop="1dp"
+                    android:paddingEnd="5dp"
+                    android:paddingBottom="1dp"
+                    android:text="HD"
+                    android:textColor="@color/text2"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/plot"
+                style="@style/Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="56dp"
+                android:layout_marginTop="14dp"
+                android:ellipsize="end"
+                android:maxWidth="580dp"
+                android:maxLines="4"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/cast"
+                style="@style/Text.Meta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="56dp"
+                android:layout_marginTop="10dp"
+                android:ellipsize="end"
+                android:lineSpacingExtra="3dp"
+                android:maxWidth="580dp"
+                android:maxLines="2"
+                android:textColor="@color/text3" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="56dp"
+                android:layout_marginTop="22dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="12dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout android:id="@+id/btnPlay" style="@style/PillBtn" android:layout_marginEnd="0dp">
+                        <ImageView style="@style/PillIcon" android:src="@drawable/ic_play" />
+                        <TextView android:id="@+id/btnPlayText" style="@style/PillText" android:text="Lecture" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/playProgress"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="3dp"
+                        android:layout_marginTop="7dp"
+                        android:max="1000"
+                        android:progressDrawable="@drawable/progress_red"
+                        android:visibility="invisible" />
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/btnRestart" style="@style/PillBtn" android:layout_marginBottom="10dp" android:visibility="gone">
+                    <ImageView style="@style/PillIcon" android:src="@drawable/ic_restart" />
+                    <TextView style="@style/PillText" android:text="Depuis le début" />
+                </LinearLayout>
+
+                <ImageView android:id="@+id/btnList" style="@style/RoundBtn" android:layout_marginBottom="10dp" android:src="@drawable/ic_add" />
+                <ImageView android:id="@+id/btnLike" style="@style/RoundBtn" android:layout_marginBottom="10dp" android:src="@drawable/ic_like" />
+
+                <TextView
+                    android:id="@+id/hint"
+                    style="@style/Text.Meta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginBottom="10dp"
+                    android:alpha="0"
+                    android:textColor="@color/text" />
+            </LinearLayout>
+
+            <!-- Séries -->
+            <LinearLayout
+                android:id="@+id/seriesBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/Text.RowTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="56dp"
+                    android:layout_marginTop="34dp"
+                    android:text="Épisodes"
+                    android:textSize="18sp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/seasons"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="6dp"
+                    android:clipToPadding="false"
+                    android:paddingStart="56dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="300dp"
+                    android:scrollbars="none" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/episodes"
+                    android:layout_width="match_parent"
+                    android:layout_height="236dp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:paddingStart="56dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="300dp"
+                    android:paddingBottom="12dp"
+                    android:scrollbars="none" />
+
+                <TextView
+                    android:id="@+id/epInfo"
+                    style="@style/Text.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="56dp"
+                    android:ellipsize="end"
+                    android:maxWidth="640dp"
+                    android:maxLines="3"
+                    android:minLines="2"
+                    android:textColor="@color/text2" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/similarTitle"
+                style="@style/Text.RowTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="56dp"
+                android:layout_marginTop="30dp"
+                android:text="Titres similaires"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/similar"
+                android:layout_width="match_parent"
+                android:layout_height="204dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="56dp"
+                android:paddingTop="15dp"
+                android:paddingEnd="300dp"
+                android:paddingBottom="15dp"
+                android:scrollbars="none"
+                android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+
+    <FrameLayout
+        android:id="@+id/busy"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000"
+        android:clickable="true"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center"
+            android:indeterminateDrawable="@drawable/spinner_red" />
+    </FrameLayout>
+</FrameLayout>

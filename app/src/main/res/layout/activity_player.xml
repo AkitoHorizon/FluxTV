@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/playerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:keep_content_on_player_reset="true"
+        app:resize_mode="fit"
+        app:show_buffering="never"
+        app:shutter_background_color="#000000"
+        app:surface_type="surface_view"
+        app:use_controller="false" />
+
+    <!-- Affiche floutée sous le chargement initial -->
+    <ImageView
+        android:id="@+id/poster"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.35"
+        android:scaleType="centerCrop" />
+
+    <ProgressBar
+        android:id="@+id/spinner"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:indeterminateDrawable="@drawable/spinner_red" />
+
+    <ImageView
+        android:id="@+id/flash"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:layout_gravity="center"
+        android:alpha="0"
+        android:background="@drawable/flash_bg"
+        android:padding="26dp" />
+
+    <!-- ======================= Contrôles films / séries ======================= -->
+    <FrameLayout
+        android:id="@+id/controls"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="170dp"
+            android:background="@drawable/grad_top" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="280dp"
+            android:layout_gravity="bottom"
+            android:background="@drawable/grad_bottom_player" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="56dp"
+            android:paddingTop="36dp"
+            android:paddingEnd="56dp">
+
+            <TextView
+                android:id="@+id/ctlTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="@font/inter_bold"
+                android:singleLine="true"
+                android:textColor="@color/text"
+                android:textSize="22sp" />
+
+            <TextView
+                android:id="@+id/ctlSubtitle"
+                style="@style/Text.Meta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textColor="#D9D9D6"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:paddingStart="56dp"
+            android:paddingEnd="56dp"
+            android:paddingBottom="26dp">
+
+            <TextView
+                android:id="@+id/scrubTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/badge_live"
+                android:backgroundTint="#E6141414"
+                android:fontFamily="@font/inter_bold"
+                android:paddingStart="10dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="4dp"
+                android:textColor="@color/text"
+                android:textSize="15sp"
+                android:visibility="invisible" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <SeekBar
+                    android:id="@+id/seek"
+                    android:layout_width="0dp"
+                    android:layout_height="28dp"
+                    android:layout_weight="1"
+                    android:focusable="true"
+                    android:maxHeight="4dp"
+                    android:minHeight="4dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:progressDrawable="@drawable/seek_track"
+                    android:splitTrack="false"
+                    android:thumb="@drawable/seek_thumb" />
+
+                <TextView
+                    android:id="@+id/remaining"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:minWidth="64dp"
+                    android:gravity="end"
+                    android:textColor="@color/text"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ctlButtons"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView android:id="@+id/ctlPlay" style="@style/CtlBtn" android:src="@drawable/ic_pause" android:contentDescription="Lecture / Pause" />
+                <ImageView android:id="@+id/ctlRew" style="@style/CtlBtn" android:src="@drawable/ic_rewind" android:contentDescription="Reculer de 10 secondes" />
+                <ImageView android:id="@+id/ctlFwd" style="@style/CtlBtn" android:src="@drawable/ic_forward" android:contentDescription="Avancer de 10 secondes" />
+
+                <TextView
+                    android:id="@+id/ctlLabel"
+                    style="@style/Text.Meta"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:textColor="@color/text"
+                    android:textSize="14sp" />
+
+                <ImageView android:id="@+id/ctlEpisodes" style="@style/CtlBtn" android:src="@drawable/ic_episodes" android:contentDescription="Épisodes" android:visibility="gone" />
+                <ImageView android:id="@+id/ctlTracks" style="@style/CtlBtn" android:src="@drawable/ic_subtitles" android:contentDescription="Audio et sous-titres" />
+                <ImageView android:id="@+id/ctlSpeed" style="@style/CtlBtn" android:src="@drawable/ic_speed" android:contentDescription="Vitesse de lecture" />
+                <ImageView android:id="@+id/ctlNext" style="@style/CtlBtn" android:src="@drawable/ic_next" android:contentDescription="Épisode suivant" android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- ======================= Épisode suivant ======================= -->
+    <LinearLayout
+        android:id="@+id/nextCard"
+        android:layout_width="380dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="48dp"
+        android:layout_marginBottom="48dp"
+        android:background="@drawable/bg_panel"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/nextImage"
+                android:layout_width="144dp"
+                android:layout_height="81dp"
+                android:background="@drawable/bg_card"
+                android:scaleType="centerCrop" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/Text.Kicker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.15"
+                    android:text="Épisode suivant" />
+
+                <TextView
+                    android:id="@+id/nextTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/inter_semibold"
+                    android:maxLines="2"
+                    android:textColor="@color/text"
+                    android:textSize="15sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/nextBtn"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="14dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ProgressBar
+                android:id="@+id/nextCountdown"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:max="1000"
+                android:progressDrawable="@drawable/progress_fill_btn" />
+
+            <TextView
+                android:id="@+id/nextBtnText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:drawableStart="@drawable/ic_play_dark"
+                android:drawablePadding="8dp"
+                android:fontFamily="@font/inter_bold"
+                android:gravity="center_vertical"
+                android:text="Épisode suivant"
+                android:textColor="#141414"
+                android:textSize="15sp" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- ======================= Audio / sous-titres / vitesse ======================= -->
+    <LinearLayout
+        android:id="@+id/panel"
+        android:layout_width="560dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="@drawable/bg_panel_right"
+        android:orientation="horizontal"
+        android:paddingStart="120dp"
+        android:paddingTop="48dp"
+        android:paddingEnd="40dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/panelColA"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical" />
+
+        <LinearLayout
+            android:id="@+id/panelColB"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:orientation="vertical" />
+    </LinearLayout>
+
+    <!-- ======================= Vous regardez toujours ? ======================= -->
+    <LinearLayout
+        android:id="@+id/still"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#E6000000"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:paddingStart="96dp"
+        android:visibility="gone">
+
+        <TextView
+            style="@style/Text.Display"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Vous regardez toujours ?"
+            android:textAllCaps="false"
+            android:textSize="48sp" />
+
+        <TextView
+            android:id="@+id/stillText"
+            style="@style/Text.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textSize="16sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:orientation="horizontal">
+
+            <LinearLayout android:id="@+id/stillContinue" style="@style/PillBtn">
+                <ImageView style="@style/PillIcon" android:src="@drawable/ic_play" />
+                <TextView style="@style/PillText" android:text="Continuer à regarder" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/stillQuit" style="@style/PillBtn">
+                <ImageView style="@style/PillIcon" android:src="@drawable/ic_back" />
+                <TextView style="@style/PillText" android:text="Retour à l'accueil" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ======================= Direct : bandeau chaîne ======================= -->
+    <LinearLayout
+        android:id="@+id/osd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/grad_bottom_player"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="56dp"
+        android:paddingTop="80dp"
+        android:paddingEnd="56dp"
+        android:paddingBottom="40dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/osdLogo"
+            android:layout_width="136dp"
+            android:layout_height="76dp"
+            android:background="@drawable/bg_logo_card"
+            android:padding="10dp"
+            android:scaleType="fitCenter" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/badge_live"
+                    android:fontFamily="@font/inter_bold"
+                    android:letterSpacing="0.1"
+                    android:paddingStart="7dp"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="7dp"
+                    android:paddingBottom="2dp"
+                    android:text="● EN DIRECT"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/osdNum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:textColor="@color/text2"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/osdName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/inter_bold"
+                android:singleLine="true"
+                android:textColor="@color/text"
+                android:textSize="26sp" />
+
+            <TextView
+                android:id="@+id/osdNow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/inter_medium"
+                android:singleLine="true"
+                android:textColor="@color/text"
+                android:textSize="15sp" />
+
+            <ProgressBar
+                android:id="@+id/osdProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_marginTop="8dp"
+                android:max="1000"
+                android:progressDrawable="@drawable/progress_red"
+                android:visibility="invisible" />
+
+            <TextView
+                android:id="@+id/osdNext"
+                style="@style/Text.Meta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:ellipsize="end"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/Text.Meta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:gravity="end"
+            android:lineSpacingExtra="4dp"
+            android:text="▲▼  changer de chaîne\n◀  liste des chaînes"
+            android:textColor="@color/text3"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- ======================= Direct : liste des chaînes ======================= -->
+    <FrameLayout
+        android:id="@+id/chPanel"
+        android:layout_width="460dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_panel_left"
+        android:visibility="gone">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/chList"
+            android:layout_width="360dp"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingStart="28dp"
+            android:paddingTop="40dp"
+            android:paddingBottom="40dp"
+            android:scrollbars="none" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/zapText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="40dp"
+        android:background="@drawable/bg_panel"
+        android:fontFamily="@font/inter_display_black"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:textColor="@color/text"
+        android:textSize="56sp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_panel"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="28dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/statusTitle"
+            style="@style/Text.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/statusText"
+            style="@style/Text.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:maxWidth="440dp"
+            android:textColor="@color/text2" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/toast"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="36dp"
+        android:alpha="0"
+        android:background="@drawable/bg_panel"
+        android:fontFamily="@font/inter_semibold"
+        android:paddingStart="18dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="10dp"
+        android:textColor="@color/text"
+        android:textSize="14sp" />
+</FrameLayout>

@@ -1,0 +1,19 @@
+<resources>
+    <!-- Noirs chauds "cocooning" -->
+    <color name="bg">#0E0E0F</color>
+    <color name="bg_deep">#080808</color>
+    <color name="surface">#181818</color>
+    <color name="surface2">#232323</color>
+    <color name="surface3">#2F2F2F</color>
+    <color name="line">#33FFFFFF</color>
+    <!-- Accent -->
+    <color name="red">#E50914</color>
+    <color name="red_dark">#B20710</color>
+    <!-- Texte -->
+    <color name="text">#F5F5F1</color>
+    <color name="text2">#B3B3B3</color>
+    <color name="text3">#7A7A7A</color>
+    <color name="green">#46D369</color>
+    <color name="gold">#F5C518</color>
+    <color name="btn_idle">#B36D6D6E</color>
+</resources>
