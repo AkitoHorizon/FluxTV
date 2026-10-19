@@ -72,9 +72,9 @@ menu 1; wait_act SearchActivity; shot recherche_vide 3
 adb shell input text "serie"; shot recherche_resultats 3
 rep 22 7; shot recherche_focus 1.5
 k 23; wait_act DetailActivity; shot fiche_serie 5
-k 20; shot fiche_serie_saisons 1.5
+rep 20 3; rep 19 1; shot fiche_serie_saisons 1.5
 k 22; shot fiche_serie_saison2 2
-k 20; shot fiche_serie_episodes 1.5
+k 23; shot fiche_serie_episodes 1.5
 k 23; wait_act PlayerActivity; shot serie_lecture 8
 qa serie
 k 20; k 22 22 22; k 23; shot serie_panneau_pistes 2
