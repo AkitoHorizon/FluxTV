@@ -35,7 +35,7 @@ object Play {
         if (eps.isEmpty()) return
         val api = Repo.api()
         Repo.queue = eps.map {
-            PlayItem(it.key, series.name, "${it.label}  « ${it.title} »", api.episodeUrl(it.id, it.ext),
+            PlayItem(it.key, series.name, "${it.label}  « ${Fmt.episodeTitle(it)} »", api.episodeUrl(it.id, it.ext),
                 false, it.image ?: series.backdrop ?: series.icon, it.num, it.id, it)
         }
         Repo.queueIndex = index.coerceIn(0, eps.size - 1)

@@ -278,6 +278,12 @@ object Fmt {
         return sb
     }
 
+    /** "Ma Série - S01E03 - Le titre" → "Le titre". */
+    fun episodeTitle(ep: com.flux.tv.data.Episode): String {
+        val t = ep.title.replace(Regex("^.*?[Ss]\\d{1,2}\\s*[EeÉé]\\d{1,3}\\s*[-–:·]*\\s*"), "").trim()
+        return t.ifEmpty { "Épisode ${ep.num}" }
+    }
+
     fun kicker(kind: Kind) = when (kind) {
         Kind.MOVIE -> "F I L M"
         Kind.SERIES -> "S É R I E"

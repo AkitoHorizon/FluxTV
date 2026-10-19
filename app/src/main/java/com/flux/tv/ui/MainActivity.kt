@@ -157,12 +157,14 @@ class MainActivity : BaseActivity(), CardListener {
         // Préchargement des catalogues pendant l'écran "Qui regarde ?"
         lifecycleScope.launch { runCatching { Repo.load(Kind.MOVIE) } }
         lifecycleScope.launch { runCatching { Repo.load(Kind.SERIES) } }
-        if (!Session.profileChosen) startActivity(Intent(this, ProfilesActivity::class.java))
     }
 
     override fun onResume() {
         super.onResume()
-        if (!Session.profileChosen) return
+        if (!Session.profileChosen) {
+            startActivity(Intent(this, ProfilesActivity::class.java))
+            return
+        }
         updateNavProfile()
         if (loadedProfile != Prefs.profileId || loadedGen != Repo.generation) show(Section.HOME, focusContent = true)
         else {

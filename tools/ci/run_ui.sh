@@ -38,13 +38,14 @@ adb logcat -c
 # ---- 1. Connexion
 restart; wait_act LoginActivity
 shot login 1
-adb shell input text "10.0.2.2:8000"; k 66
-adb shell input text "demo"; k 66
-adb shell input text "demo"; k 66
+# Lien M3U complet collé dans le champ serveur (les identifiants se remplissent seuls)
+adb shell input text "http://10.0.2.2:8000/get.php?username=demo\\\&password=demo\\\&type=m3u"
+shot login_lien_m3u 1
+k 66
 wait_act ProfilesActivity && shot profils 4
 
 # ---- 2. Accueil
-k 23; wait_act MainActivity; shot accueil_billboard 6
+k 22 21; k 23; wait_act MainActivity; shot accueil_billboard 6
 k 20; shot accueil_rangees 2
 k 22 22 22; shot rangee_defilee 2
 k 20; shot rangee_top10 2
@@ -76,9 +77,9 @@ k 22; shot fiche_serie_saison2 2
 k 20; shot fiche_serie_episodes 1.5
 k 23; wait_act PlayerActivity; shot serie_lecture 8
 qa serie
-k 23; k 22 22 22; k 23; shot serie_panneau_pistes 2
+k 20; k 22 22 22; k 23; shot serie_panneau_pistes 2
 k 22; k 20; k 23; shot serie_soustitres_actives 4
-k 23; rep 22 30; shot serie_saut_fin 3
+k 4; sleep 1; rep 22 30; shot serie_saut_fin 3
 shot serie_episode_suivant 12
 shot serie_enchainement 14
 k 4; k 4; k 4; wait_act DetailActivity; shot fiche_serie_progression 3
@@ -107,7 +108,7 @@ for res in "1920x1080 320" "1920x1080 240" "1280x720 160" "1280x720 213" "3840x2
   set -- $res
   adb shell wm size "$1"; adb shell wm density "$2"
   tag="${1}_${2}dpi"
-  restart; wait_act ProfilesActivity; sleep 2; k 23; wait_act MainActivity; shot "res_${tag}_accueil" 6
+  restart; wait_act ProfilesActivity; sleep 2; k 22 21; k 23; wait_act MainActivity; shot "res_${tag}_accueil" 6
   k 20; shot "res_${tag}_rangees" 2
   menu 4; sleep 4; k 20; k 23; wait_act DetailActivity; shot "res_${tag}_fiche" 3
   menu 6; wait_act LiveActivity; shot "res_${tag}_guide" 4

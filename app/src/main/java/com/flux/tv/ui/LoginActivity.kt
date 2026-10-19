@@ -43,6 +43,10 @@ class LoginActivity : BaseActivity() {
         server.setText(Prefs.server)
         user.setText(Prefs.user)
         login.setOnClickListener { submit() }
+        // Lien M3U complet collé dans le champ serveur : OK suffit pour se connecter
+        server.setOnEditorActionListener { _, _, _ ->
+            if (server.text.contains("username=")) { submit(); true } else false
+        }
         pass.setOnEditorActionListener { _, id, _ ->
             if (id == EditorInfo.IME_ACTION_DONE) { login.requestFocus(); submit(); true } else false
         }

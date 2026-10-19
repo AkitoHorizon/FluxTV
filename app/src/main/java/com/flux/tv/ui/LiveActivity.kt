@@ -59,6 +59,8 @@ class LiveActivity : BaseActivity() {
     private var catJob: Job? = null
     private var chJob: Job? = null
     private var openedPlayer = false
+    private var ready = false          // ignore les focus automatiques pendant le chargement
+    private lateinit var chEmpty: TextView
     private val catAdapter = CatAdapter()
     private val chAdapter = ChAdapter()
     private val hhmm = SimpleDateFormat("HH:mm", Locale.FRANCE)
@@ -78,6 +80,7 @@ class LiveActivity : BaseActivity() {
         epgNext = findViewById(R.id.epgNext)
         epgProgress = findViewById(R.id.epgProgress)
         loading = findViewById(R.id.loading)
+        chEmpty = findViewById(R.id.chEmpty)
 
         catList.layoutManager = LinearLayoutManager(this)
         catList.adapter = catAdapter
@@ -115,7 +118,7 @@ class LiveActivity : BaseActivity() {
                 selectCategory(start)
                 val last = current.indexOfFirst { it.key == Prefs.lastChannel }.coerceAtLeast(0)
                 chList.scrollToPosition(last)
-                focusChannel(last)
+                focusChannel(last) { ready = true }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -139,12 +142,19 @@ class LiveActivity : BaseActivity() {
         }
         chAdapter.notifyDataSetChanged()
         chList.scrollToPosition(0)
+        chEmpty.text = when (cats[i].id) {
+            FAV -> "Aucune chaîne favorite pour l'instant.\nAppui long sur OK sur une chaîne pour l'ajouter."
+            RECENT -> "Aucune chaîne regardée récemment."
+            else -> "Aucune chaîne dans cette catégorie."
+        }
+        chEmpty.show(current.isEmpty())
     }
 
-    private fun focusChannel(pos: Int, attempt: Int = 0) {
+    private fun focusChannel(pos: Int, attempt: Int = 0, done: (() -> Unit)? = null) {
         val v = chList.findViewHolderForAdapterPosition(pos)?.itemView
-        if (v != null) v.requestFocus()
-        else if (attempt < 20) chList.postDelayed({ focusChannel(pos, attempt + 1) }, 50)
+        if (v != null) { v.requestFocus(); done?.invoke() }
+        else if (attempt < 30) chList.postDelayed({ focusChannel(pos, attempt + 1, done) }, 50)
+        else { catList.getChildAt(0)?.requestFocus(); done?.invoke() }
     }
 
     override fun onStart() {
@@ -246,7 +256,7 @@ class LiveActivity : BaseActivity() {
             val tv = LayoutInflater.from(parent.context).inflate(R.layout.item_category, parent, false) as TextView
             val vh = VH(tv)
             tv.setOnFocusChangeListener { _, has ->
-                if (!has) return@setOnFocusChangeListener
+                if (!has || !ready) return@setOnFocusChangeListener
                 val pos = vh.bindingAdapterPosition
                 catJob?.cancel()
                 catJob = lifecycleScope.launch { delay(220); if (pos != selectedCat) selectCategory(pos) }

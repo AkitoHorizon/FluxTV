@@ -152,6 +152,7 @@ class CardAdapter(private val listener: CardListener) : RecyclerView.Adapter<Car
 
     private fun bindWide(h: VH, it: Item) {
         h.shade.show(true); h.textBox.show(true); h.sub.show(true)
+        h.title.maxLines = 1
         if (it.kind == Kind.SERIES) {
             val meta = Prefs.episodeMeta(it.id)
             Img.card(h.img, meta?.image ?: it.backdrop ?: it.icon, Cards.width(h.style), Cards.height(h.style))

@@ -207,11 +207,13 @@ class ProfilesActivity : BaseActivity() {
             setOnClickListener { action() }
             buttons.addView(this, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, 44.dp).apply { marginEnd = 12.dp })
         }
-        button("Enregistrer") {
+        val save = {
             val n = name.text.toString().trim().ifEmpty { "Profil" }.take(16)
             if (p == null) Prefs.addProfile(n, color) else Prefs.updateProfile(Profile(p.id, n, color))
             d.dismiss(); build(); setManage(manage); focusCurrent()
         }
+        name.setOnEditorActionListener { _, _, _ -> save(); true }
+        button("Enregistrer") { save() }
         button("Annuler") { d.dismiss() }
         if (p != null && Prefs.profiles().size > 1) button("Supprimer") {
             showMenu("Supprimer « ${p.name} » ?", "Son historique, sa liste et ses préférences seront effacés.", listOf(

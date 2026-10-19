@@ -249,11 +249,7 @@ class DetailActivity : BaseActivity(), CardListener {
         Play.episodes(this, item, all, all.indexOf(ep), resume = !Prefs.isWatched(ep.key))
     }
 
-    /** "Ma Série - S01E03 - Le titre" → "Le titre". */
-    private fun cleanTitle(ep: Episode): String {
-        val t = ep.title.replace(Regex("^.*?[Ss]\\d{1,2}\\s*[EeÉé]\\d{1,3}\\s*[-–:·]*\\s*"), "").trim()
-        return t.ifEmpty { "Épisode ${ep.num}" }
-    }
+    private fun cleanTitle(ep: Episode) = Fmt.episodeTitle(ep)
 
     // ------------------------------------------------------------------ titres similaires
 
