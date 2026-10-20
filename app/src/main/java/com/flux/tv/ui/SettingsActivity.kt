@@ -133,7 +133,7 @@ class SettingsActivity : BaseActivity() {
                 Uri.parse(Prefs.server).host?.takeIf { it.isNotEmpty() && !FluxDns.isIpLiteral(it) },
                 "example.com",
             ).distinct()
-            val text = hosts.joinToString("\n\n") { DnsDiagnostic.compare(it).format() }
+            val text = hosts.map { DnsDiagnostic.compare(it).format() }.joinToString("\n\n")
             v.text = "DNS box ↔ DNS externe"
             showMenu("Diagnostic DNS · ${Prefs.dohProvider.label}", text, listOf("Fermer" to {}), subtitleLines = 30)
         }
