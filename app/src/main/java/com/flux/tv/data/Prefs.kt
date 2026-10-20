@@ -23,6 +23,9 @@ object Prefs {
     var user: String get() = str("user"); set(v) = put("user", v)
     var pass: String get() = str("pass"); set(v) = put("pass", v)
     val hasAccount get() = server.isNotEmpty() && user.isNotEmpty() && pass.isNotEmpty()
+    /** Écriture immédiate sur disque : le compte survit même à une coupure de courant juste après. */
+    fun saveAccount(s: String, u: String, p: String) =
+        sp.edit().putString("server", s).putString("user", u).putString("pass", p).commit()
     fun clearAccount() = sp.edit().remove("server").remove("user").remove("pass").apply()
 
     // ------------------------------------------------------------------ réglages globaux

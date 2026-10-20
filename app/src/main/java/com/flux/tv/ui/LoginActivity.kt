@@ -76,7 +76,7 @@ class LoginActivity : BaseActivity() {
             setBusy(true)
             try {
                 val ok = tryVariants(s, u, p)
-                Prefs.server = ok; Prefs.user = u; Prefs.pass = p
+                withContext(Dispatchers.IO) { Prefs.saveAccount(ok, u, p) }
                 Repo.clear()
                 startActivity(Intent(this@LoginActivity, MainActivity::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
