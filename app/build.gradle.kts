@@ -11,8 +11,8 @@ android {
         applicationId = "com.flux.tv"
         minSdk = 21          // X96 mini = Android 7.1 (API 25) ; marge pour les vieux firmwares
         targetSdk = 34
-        versionCode = 2
-        versionName = "2.0"
+        versionCode = 3
+        versionName = "2.1"
     }
 
     buildTypes {

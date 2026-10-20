@@ -14,8 +14,11 @@ import com.flux.tv.data.Prefs
 import com.flux.tv.data.Repo
 import com.flux.tv.data.XtreamApi
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.ConnectException
+import java.net.InetAddress
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
@@ -72,8 +75,8 @@ class LoginActivity : BaseActivity() {
         lifecycleScope.launch {
             setBusy(true)
             try {
-                XtreamApi(s, u, p).auth()
-                Prefs.server = s; Prefs.user = u; Prefs.pass = p
+                val ok = tryVariants(s, u, p)
+                Prefs.server = ok; Prefs.user = u; Prefs.pass = p
                 Repo.clear()
                 startActivity(Intent(this@LoginActivity, MainActivity::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
@@ -81,19 +84,69 @@ class LoginActivity : BaseActivity() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                showError(
-                    when (e) {
-                        is UnknownHostException -> "Serveur introuvable. Vérifiez l'adresse et la connexion Internet."
-                        is SocketTimeoutException -> "Le serveur ne répond pas (délai dépassé)."
-                        is ConnectException -> "Connexion refusée par le serveur (port incorrect ?)."
-                        is IllegalArgumentException -> "Adresse du serveur invalide."
-                        else -> e.message ?: "Erreur de connexion."
-                    }
-                )
+                showError(e.message ?: "Erreur de connexion.")
             } finally {
                 setBusy(false)
             }
         }
+    }
+
+    /**
+     * Essaie l'adresse telle quelle puis des variantes courantes (sans :80, https, port 8080).
+     * Renvoie l'adresse qui a fonctionné, ou lève une erreur détaillée.
+     */
+    private suspend fun tryVariants(s: String, u: String, p: String): String {
+        val list = variants(s)
+        var authError: Exception? = null
+        var firstError: Exception? = null
+        for ((i, v) in list.withIndex()) {
+            if (i > 0) showError("Essai ${i + 1}/${list.size} : $v")
+            try {
+                XtreamApi(v, u, p).auth()
+                return v
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("FluxQA", "login $v -> $e")
+                if (firstError == null) firstError = e
+                if (authError == null && e.message?.contains("incorrect") == true) authError = e
+            }
+        }
+        authError?.let { throw it }
+        val e = firstError ?: Exception("Erreur de connexion.")
+        val host = Uri.parse(s).host
+        val ips = withContext(Dispatchers.IO) {
+            runCatching { InetAddress.getAllByName(host).map { it.hostAddress } }.getOrNull()
+        }
+        val blocked = ips?.any { it == "0.0.0.0" || it.startsWith("127.") || it == "::" || it == "::1" } == true
+        val msg = when {
+            blocked -> "L'adresse du serveur est bloquée par le DNS de votre réseau (elle pointe vers ${ips?.first()})."
+            e is UnknownHostException -> "Serveur introuvable. Vérifiez l'adresse et la connexion Internet."
+            e is SocketTimeoutException -> "Le serveur ne répond pas (délai dépassé)."
+            e is ConnectException -> "Connexion refusée par le serveur."
+            e is IllegalArgumentException -> "Adresse du serveur invalide."
+            else -> e.message ?: "Erreur de connexion."
+        }
+        val detail = "Détail : ${e.javaClass.simpleName} ${e.message ?: ""}".trim() +
+            (ips?.let { "\nIP du serveur : " + it.joinToString(", ") } ?: "") +
+            "\nAdresses essayées : " + list.joinToString(" · ")
+        throw Exception("$msg\n\n$detail")
+    }
+
+    private fun variants(s: String): List<String> {
+        val uri = Uri.parse(s)
+        val host = uri.host ?: return listOf(s)
+        val h = if (host.contains(':')) "[$host]" else host
+        val out = LinkedHashSet<String>()
+        out += s
+        when (uri.port) {
+            80 -> out += "http://$h"
+            -1 -> out += "http://$h:8080"
+            else -> {}
+        }
+        if (uri.scheme == "http") out += "https://$h" + if (uri.port != -1 && uri.port != 80) ":${uri.port}" else ""
+        else out += "http://$h" + if (uri.port != -1 && uri.port != 443) ":${uri.port}" else ""
+        return out.toList()
     }
 
     private fun normalize(raw: String): String {
