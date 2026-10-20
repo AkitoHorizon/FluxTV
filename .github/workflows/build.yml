@@ -16,7 +16,9 @@ jobs:
         with:
           gradle-version: "8.9"
       - name: Compilation
-        run: gradle assembleRelease --no-daemon
+        run: |
+          set -o pipefail
+          gradle assembleRelease --no-daemon 2>&1 | tee build.log || { grep -E "^e: |What went wrong|ERROR|error:" -A4 build.log | head -40 | while IFS= read -r l; do echo "::error::$l"; done; exit 1; }
       - name: Renommer l'APK
         run: cp app/build/outputs/apk/release/app-release.apk FluxTV.apk
       - uses: actions/upload-artifact@v4
