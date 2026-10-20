@@ -14,11 +14,43 @@ adb connect "$IP:5555"
 ADB="adb -s $IP:5555"
 timeout 30 $ADB wait-for-device || { echo "Boîtier injoignable. Débogage ADB activé ?"; exit 1; }
 
-echo "[1/5] Installation de Flux TV…"
-$ADB install -r "$APK" || { echo "Échec de l'installation"; exit 1; }
+MODE=install
+$ADB shell pm path "$PKG" 2>/dev/null | grep -q "package:" && MODE=update
+if [ "$MODE" = update ]; then
+  echo "=== Flux TV est déjà installé : MISE À JOUR (compte, profils et historique conservés) ==="
+  echo "    Version actuelle : $($ADB shell dumpsys package "$PKG" | tr -d '\r' | grep -m1 versionName | cut -d= -f2)"
+else
+  echo "=== Première installation de Flux TV ==="
+fi
+
+echo "[1/5] Installation de Flux TV (1 à 3 minutes)…"
+OUT=$($ADB install -r "$APK" 2>&1); echo "$OUT"
+if ! echo "$OUT" | grep -q Success; then
+  if echo "$OUT" | grep -qE "UPDATE_INCOMPATIBLE|signatures do not match|INCONSISTENT_CERTIFICATES|VERSION_DOWNGRADE"; then
+    echo "L'ancienne version n'a pas la même signature : désinstallation puis réinstallation."
+    echo "Cette fois seulement, il faudra retaper le serveur et les identifiants."
+    $ADB uninstall "$PKG"
+    OUT=$($ADB install "$APK" 2>&1); echo "$OUT"
+    echo "$OUT" | grep -q Success || { echo "Échec de l'installation"; exit 1; }
+    MODE=install
+  else
+    echo "Échec de l'installation"; exit 1
+  fi
+fi
 
 echo "[2/5] Flux TV devient l'écran d'accueil…"
 $ADB shell cmd package set-home-activity "$PKG/.ui.MainActivity" || true
+
+if [ "$MODE" = update ]; then
+  echo "[3/5] Nettoyage du boîtier déjà fait : étape ignorée."
+  echo "[4/5] Optimisation de l'appli…"
+  $ADB shell cmd package compile -m speed -f "$PKG" || true
+  echo "[5/5] Relance de Flux TV…"
+  $ADB shell am force-stop "$PKG"
+  $ADB shell am start -n "$PKG/.ui.MainActivity" >/dev/null
+  echo "Mise à jour terminée : $($ADB shell dumpsys package "$PKG" | tr -d '\r' | grep -m1 versionName | cut -d= -f2)"
+  exit 0
+fi
 
 echo "[3/5] Désactivation des applis inutiles…"
 INSTALLED=$($ADB shell pm list packages | tr -d '\r' | sed 's/^package://')

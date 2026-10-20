@@ -161,6 +161,17 @@ sur **Flux TV** : entrez l'URL du serveur, l'utilisateur et le mot de passe, c'e
 
 ---
 
+## Mettre à jour Flux TV
+
+Téléchargez le nouveau **FluxTV-apk** (onglet **Actions**), remplacez `FluxTV.apk` dans votre dossier
+et relancez **install.bat** (ou `install.sh`) avec la même IP. Le script détecte que Flux TV est déjà
+installé et fait une **mise à jour** : compte IPTV, profils et historique sont conservés, le nettoyage
+n'est pas refait et l'appli se relance toute seule (pas de redémarrage du boîtier).
+
+> Depuis la version 2.2, toutes les versions sont signées avec la même clé. Si vous aviez une version
+> plus ancienne, le script la désinstalle automatiquement une seule fois : il faudra alors retaper le
+> serveur et les identifiants.
+
 ## Revenir en arrière
 `restore.bat` (Windows) ou `./restore.sh IP` (Mac/Linux) réactive toutes les applis
 d'origine, remet les animations et peut désinstaller Flux TV. Rien n'est supprimé du système :

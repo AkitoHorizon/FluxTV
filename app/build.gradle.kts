@@ -11,8 +11,19 @@ android {
         applicationId = "com.flux.tv"
         minSdk = 21          // X96 mini = Android 7.1 (API 25) ; marge pour les vieux firmwares
         targetSdk = 34
-        versionCode = 3
-        versionName = "2.1"
+        versionCode = 4
+        versionName = "2.2"
+    }
+
+    // Clé de signature fixe : chaque nouvelle version se met à jour par-dessus l'ancienne
+    // (sans elle, chaque compilation GitHub aurait une clé différente et la mise à jour serait refusée).
+    signingConfigs {
+        create("flux") {
+            storeFile = file("flux.jks")
+            storePassword = "fluxtv-box"
+            keyAlias = "flux"
+            keyPassword = "fluxtv-box"
+        }
     }
 
     buildTypes {
@@ -21,8 +32,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Signé avec la clé de debug : suffisant pour une installation manuelle sur le boîtier
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("flux")
         }
     }
     compileOptions {
