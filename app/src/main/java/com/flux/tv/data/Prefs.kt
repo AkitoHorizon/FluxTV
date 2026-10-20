@@ -43,7 +43,7 @@ object Prefs {
         get() = runCatching { DnsMode.valueOf(str("dnsMode", DnsMode.DOH_FALLBACK.name)) }.getOrDefault(DnsMode.DOH_FALLBACK)
         set(v) = put("dnsMode", v.name)
     var dohProvider: DohProvider
-        get() = runCatching { DohProvider.valueOf(str("dohProvider", DohProvider.CLOUDFLARE.name)) }.getOrDefault(DohProvider.CLOUDFLARE)
+        get() = runCatching { DohProvider.valueOf(str("dohProvider", DohProvider.QUAD9.name)) }.getOrDefault(DohProvider.QUAD9)
         set(v) = put("dohProvider", v.name)
 
     // ------------------------------------------------------------------ profils

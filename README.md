@@ -161,8 +161,10 @@ sur **Flux TV** : entrez l'URL du serveur, l'utilisateur et le mot de passe, c'e
 
 ### DNS externe (DNS-over-HTTPS)
 Par défaut, Flux TV ne demande plus les adresses des serveurs au DNS de la box : il passe par un
-résolveur externe chiffré (DoH, RFC 8484), Cloudflare par défaut. Quad9 et Google sont aussi
-proposés. La connexion, les catalogues, la lecture vidéo et les affiches en profitent, car tout
+résolveur externe chiffré (DoH, RFC 8484), Quad9 par défaut. Cloudflare et Google sont aussi
+proposés, et l'appli bascule automatiquement sur un autre résolveur si celui choisi est
+injoignable. Sur Android 7.1, Cloudflare est refusé (certificat non reconnu) : Quad9 et Google
+fonctionnent. La connexion, les catalogues, la lecture vidéo et les affiches en profitent, car tout
 passe par le même client réseau (`App.http` → `data/FluxDns.kt`).
 
 Réglages ▸ **Réseau · DNS** :
@@ -170,7 +172,7 @@ Réglages ▸ **Réseau · DNS** :
   - *DNS externe (DoH) + repli box* (par défaut) ;
   - *DNS externe (DoH) strict* : erreur explicite si le résolveur est injoignable ;
   - *DNS du réseau (box)* : comportement d'origine.
-- **Résolveur externe** : Cloudflare / Quad9 / Google. Les IP d'amorçage sont intégrées, donc
+- **Résolveur externe** : Quad9 / Cloudflare / Google. Les IP d'amorçage sont intégrées, donc
   la box n'est jamais interrogée pour le nom du résolveur.
 - **Tester la résolution DNS** : compare, pour votre serveur et pour `example.com`, la réponse de
   la box et celle du DNS externe (adresses, temps de réponse, verdict).
