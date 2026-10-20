@@ -135,7 +135,7 @@ class SettingsActivity : BaseActivity() {
             ).distinct()
             val text = hosts.map { DnsDiagnostic.compare(it).format() }.joinToString("\n\n")
             v.text = "DNS box ↔ DNS externe"
-            showMenu("Diagnostic DNS · ${Prefs.dohProvider.label}", text, listOf("Fermer" to {}), subtitleLines = 30)
+            showMenu("Diagnostic DNS", text, listOf("Fermer" to {}), subtitleLines = 30)
         }
     }
 

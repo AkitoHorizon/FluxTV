@@ -103,9 +103,7 @@ object FluxDns : Dns {
         val result = when {
             mode == DnsMode.SYSTEM || isIpLiteral(hostname) -> system(hostname, "DNS box")
             else -> try {
-                resolveDoh(hostname, Prefs.dohProvider).also {
-                    lastRoute[hostname] = "DNS externe ${Prefs.dohProvider.label}"
-                }
+                resolveWithFailover(hostname)
             } catch (e: DohException) {
                 if (mode != DnsMode.DOH_FALLBACK) throw e
                 Log.w(TAG, "repli sur le DNS de la box pour $hostname : ${e.reason}")
@@ -114,6 +112,38 @@ object FluxDns : Dns {
         }
         // IPv4 en premier : beaucoup de box/FAI annoncent l'IPv6 sans le router correctement
         return result.sortedBy { if (it is Inet4Address) 0 else 1 }
+    }
+
+    /** Le résolveur choisi d'abord, puis les autres en secours. */
+    fun providerOrder(): List<DohProvider> {
+        val chosen = Prefs.dohProvider
+        return listOf(chosen) + DohProvider.values().filter { it != chosen }
+    }
+
+    /** Résolveurs injoignables récemment (ex. certificat refusé par un vieil Android) : ignorés 10 min. */
+    private val unreachableUntil = ConcurrentHashMap<DohProvider, Long>()
+
+    /**
+     * Essaie le résolveur choisi, puis les autres s'il est injoignable.
+     * Une réponse « domaine inexistant » n'est pas retentée ailleurs.
+     */
+    private fun resolveWithFailover(host: String): List<InetAddress> {
+        val now = SystemClock.elapsedRealtime()
+        val order = providerOrder().sortedBy { if ((unreachableUntil[it] ?: 0L) > now) 1 else 0 }
+        var last: DohException? = null
+        for (p in order) {
+            try {
+                val r = resolveDoh(host, p)
+                unreachableUntil.remove(p)
+                lastRoute[host] = "DNS externe ${p.label}"
+                return r
+            } catch (e: DohException) {
+                if (!e.unreachable) throw e
+                unreachableUntil[p] = SystemClock.elapsedRealtime() + 10 * 60_000L
+                last = e
+            }
+        }
+        throw last ?: DohException(host, Prefs.dohProvider, "aucun résolveur disponible", true, null)
     }
 
     /** Résolution A + AAAA via le résolveur DoH donné, avec journalisation et erreurs explicites. */
@@ -139,6 +169,7 @@ object FluxDns : Dns {
     /** À appeler quand le mode ou le résolveur change : les connexions ouvertes sont refaites. */
     fun onSettingsChanged() {
         lastRoute.clear()
+        unreachableUntil.clear()
         App.http.connectionPool.evictAll()
         Log.i(TAG, "mode = ${Prefs.dnsMode}, résolveur = ${Prefs.dohProvider.label}")
     }

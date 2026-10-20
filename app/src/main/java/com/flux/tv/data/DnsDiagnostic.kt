@@ -15,8 +15,10 @@ data class Resolution(val label: String, val ips: List<String>, val ms: Long, va
     fun line() = "$label : " + (if (ok) ips.joinToString(", ") else "échec, $error") + " · $ms ms"
 }
 
-data class DnsReport(val host: String, val system: Resolution, val doh: Resolution, val verdict: String, val sinkhole: Boolean) {
-    fun format() = "$host\n${system.line()}\n${doh.line()}\n→ $verdict"
+data class DnsReport(val host: String, val system: Resolution, val dohAll: List<Resolution>, val verdict: String, val sinkhole: Boolean) {
+    /** Premier résolveur externe qui a répondu (sinon le premier essayé). */
+    val doh get() = dohAll.firstOrNull { it.ok } ?: dohAll.first()
+    fun format() = "$host\n${system.line()}\n" + dohAll.joinToString("\n") { it.line() } + "\n→ $verdict"
 }
 
 /**
@@ -26,11 +28,14 @@ data class DnsReport(val host: String, val system: Resolution, val doh: Resoluti
 object DnsDiagnostic {
     private const val TAG = "FluxDNS"
 
-    suspend fun compare(host: String, provider: DohProvider = Prefs.dohProvider): DnsReport = withContext(Dispatchers.IO) {
+    /** Interroge en parallèle la box et tous les résolveurs externes (le choisi en premier). */
+    suspend fun compare(host: String): DnsReport = withContext(Dispatchers.IO) {
         coroutineScope {
             val sys = async { timed("DNS box") { Dns.SYSTEM.lookup(host) } }
-            val doh = async { timed("DNS externe ${provider.label}") { FluxDns.resolveDoh(host, provider) } }
-            report(host, sys.await(), doh.await())
+            val doh = FluxDns.providerOrder().map { p ->
+                async { timed("DNS externe ${p.label}") { FluxDns.resolveDoh(host, p) } }
+            }
+            report(host, sys.await(), doh.map { it.await() })
         }.also { Log.i(TAG, "diagnostic\n${it.format()}") }
     }
 
@@ -46,17 +51,18 @@ object DnsDiagnostic {
         }
     }
 
-    private fun report(host: String, sys: Resolution, doh: Resolution): DnsReport {
+    private fun report(host: String, sys: Resolution, dohAll: List<Resolution>): DnsReport {
+        val doh = dohAll.firstOrNull { it.ok } ?: dohAll.first()
         val sinkhole = sys.ok && sys.ips.all(::isSinkhole) && !(doh.ok && doh.ips.all(::isSinkhole))
         val verdict = when {
             sys.ok && doh.ok && sys.ips.any { it in doh.ips } -> "Réponses concordantes : la box ne modifie pas ce nom."
             sinkhole -> "La box renvoie une adresse de blocage (${sys.ips.first()}). Le DNS externe donne la vraie adresse."
             sys.ok && doh.ok -> "Adresses différentes. Cela peut venir d'un CDN ou d'une redirection par la box : comparez la connexion dans les deux modes."
             !sys.ok && doh.ok -> "La box ne résout pas ce nom alors que le DNS externe y arrive : blocage DNS probable."
-            sys.ok && !doh.ok -> "Le DNS externe a échoué (${doh.error}). Le réseau bloque peut-être le résolveur DoH."
+            sys.ok && !doh.ok -> "Aucun DNS externe n'a répondu. Le réseau bloque peut-être les résolveurs DoH."
             else -> "Les deux résolutions échouent : nom inexistant ou réseau coupé."
         }
-        return DnsReport(host, sys, doh, verdict, sinkhole)
+        return DnsReport(host, sys, dohAll, verdict, sinkhole)
     }
 
     /** Adresses typiques d'un blocage ou d'une redirection DNS locale. */
