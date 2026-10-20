@@ -1,13 +1,16 @@
 package com.flux.tv
 
 import android.app.Application
+import com.bumptech.glide.Glide
+import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
+import com.bumptech.glide.load.model.GlideUrl
+import com.flux.tv.data.FluxDns
 import com.flux.tv.data.Prefs
 import com.flux.tv.ui.Fonts
 import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
-import okhttp3.Dns
 import okhttp3.OkHttpClient
-import java.net.Inet4Address
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 class App : Application() {
@@ -22,11 +25,8 @@ class App : Application() {
             // Connexions réutilisées (keep-alive) : zapping et chargements plus rapides
             .connectionPool(ConnectionPool(8, 5, TimeUnit.MINUTES))
             .dispatcher(Dispatcher().apply { maxRequestsPerHost = 8 })
-            // IPv4 en premier : beaucoup de box/FAI annoncent l'IPv6 sans le router correctement
-            .dns(object : Dns {
-                override fun lookup(hostname: String) =
-                    Dns.SYSTEM.lookup(hostname).sortedBy { if (it is Inet4Address) 0 else 1 }
-            })
+            // Résolution DNS : box ou DNS externe (DoH) selon les réglages ; IPv4 en premier dans tous les cas
+            .dns(FluxDns)
             .retryOnConnectionFailure(true)
             .followRedirects(true)
             .followSslRedirects(true)
@@ -34,6 +34,10 @@ class App : Application() {
                 chain.proceed(chain.request().newBuilder().header("User-Agent", USER_AGENT).build())
             }
             .build()
+
+        // Les affiches passent par le même client (donc le même DNS), sans l'User-Agent VLC
+        val images = http.newBuilder().apply { interceptors().clear() }.build()
+        Glide.get(this).registry.replace(GlideUrl::class.java, InputStream::class.java, OkHttpUrlLoader.Factory(images))
     }
 
     companion object {

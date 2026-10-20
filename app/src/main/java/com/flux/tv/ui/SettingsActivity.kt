@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.provider.Settings
@@ -13,6 +14,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import com.flux.tv.R
+import com.flux.tv.data.DnsDiagnostic
+import com.flux.tv.data.DnsMode
+import com.flux.tv.data.DohProvider
+import com.flux.tv.data.FluxDns
 import com.flux.tv.data.Prefs
 import com.flux.tv.data.Repo
 import kotlinx.coroutines.launch
@@ -100,6 +105,17 @@ class SettingsActivity : BaseActivity() {
             ))
         }
 
+        section("Réseau · DNS")
+        row(R.drawable.ic_wifi, "Résolution DNS", Prefs.dnsMode.label) { v ->
+            Prefs.dnsMode = DnsMode.values()[(Prefs.dnsMode.ordinal + 1) % DnsMode.values().size]
+            FluxDns.onSettingsChanged(); v.text = Prefs.dnsMode.label
+        }
+        row(R.drawable.ic_settings, "Résolveur externe (DoH)", Prefs.dohProvider.label) { v ->
+            Prefs.dohProvider = DohProvider.values()[(Prefs.dohProvider.ordinal + 1) % DohProvider.values().size]
+            FluxDns.onSettingsChanged(); v.text = Prefs.dohProvider.label
+        }
+        row(R.drawable.ic_search, "Tester la résolution DNS", "DNS box ↔ DNS externe") { v -> dnsTest(v) }
+
         section("Système")
         netValue = row(R.drawable.ic_wifi, "Réseau", networkLabel()) { open(Settings.ACTION_WIFI_SETTINGS) }
         row(R.drawable.ic_settings, "Paramètres Android", "Wi-Fi, Ethernet, écran, son") { open(Settings.ACTION_SETTINGS) }
@@ -107,6 +123,20 @@ class SettingsActivity : BaseActivity() {
         row(R.drawable.ic_info, "À propos", "Flux TV $version · polices Inter & Big Shoulders (OFL)")
 
         list.post { list.getChildAt(2)?.requestFocus() }
+    }
+
+    /** Compare le DNS de la box et le DNS externe pour le serveur IPTV et un domaine témoin. */
+    private fun dnsTest(v: TextView) {
+        v.text = "Test en cours…"
+        lifecycleScope.launch {
+            val hosts = listOfNotNull(
+                Uri.parse(Prefs.server).host?.takeIf { it.isNotEmpty() && !FluxDns.isIpLiteral(it) },
+                "example.com",
+            ).distinct()
+            val text = hosts.joinToString("\n\n") { DnsDiagnostic.compare(it).format() }
+            v.text = "DNS box ↔ DNS externe"
+            showMenu("Diagnostic DNS · ${Prefs.dohProvider.label}", text, listOf("Fermer" to {}), subtitleLines = 30)
+        }
     }
 
     private fun section(title: String) {

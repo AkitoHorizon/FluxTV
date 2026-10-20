@@ -302,7 +302,7 @@ object Fmt {
 // ====================================================================== menus
 
 /** Menu contextuel sombre façon Netflix. */
-fun Context.showMenu(title: String, subtitle: String? = null, options: List<Pair<String, () -> Unit>>) {
+fun Context.showMenu(title: String, subtitle: String? = null, options: List<Pair<String, () -> Unit>>, subtitleLines: Int = 4) {
     val d = AppCompatDialog(this, R.style.Dialog)
     val box = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
@@ -315,7 +315,7 @@ fun Context.showMenu(title: String, subtitle: String? = null, options: List<Pair
     })
     if (subtitle != null) box.addView(TextView(this).apply {
         text = subtitle; typeface = Fonts.regular; textSize = 14f; setTextColor(0xFFB3B3B3.toInt())
-        setPadding(0, 8.dp, 0, 0); maxLines = 4
+        setPadding(0, 8.dp, 0, 0); maxLines = subtitleLines
     })
     val first = box.childCount
     options.forEachIndexed { i, (label, action) ->

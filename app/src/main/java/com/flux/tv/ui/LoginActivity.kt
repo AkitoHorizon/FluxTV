@@ -10,6 +10,9 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import com.flux.tv.R
+import com.flux.tv.data.DnsDiagnostic
+import com.flux.tv.data.DohException
+import com.flux.tv.data.FluxDns
 import com.flux.tv.data.Prefs
 import com.flux.tv.data.Repo
 import com.flux.tv.data.XtreamApi
@@ -18,7 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.ConnectException
-import java.net.InetAddress
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
@@ -115,12 +117,12 @@ class LoginActivity : BaseActivity() {
         authError?.let { throw it }
         val e = firstError ?: Exception("Erreur de connexion.")
         val host = Uri.parse(s).host
-        val ips = withContext(Dispatchers.IO) {
-            runCatching { InetAddress.getAllByName(host).map { it.hostAddress } }.getOrNull()
-        }
-        val blocked = ips?.any { it == "0.0.0.0" || it.startsWith("127.") || it == "::" || it == "::1" } == true
+        // Diagnostic : on compare la réponse du DNS de la box et celle du DNS externe (DoH)
+        val dns = host?.takeIf { !FluxDns.isIpLiteral(it) }?.let { h -> runCatching { DnsDiagnostic.compare(h) }.getOrNull() }
+        val ips = dns?.system?.ips?.takeIf { it.isNotEmpty() }
         val msg = when {
-            blocked -> "L'adresse du serveur est bloquée par le DNS de votre réseau (elle pointe vers ${ips?.first()})."
+            dns?.sinkhole == true -> "L'adresse du serveur est bloquée par le DNS de votre réseau (la box renvoie ${ips?.first()})."
+            e is DohException -> "Le DNS externe n'a pas pu résoudre le serveur : ${e.reason}."
             e is UnknownHostException -> "Serveur introuvable. Vérifiez l'adresse et la connexion Internet."
             e is SocketTimeoutException -> "Le serveur ne répond pas (délai dépassé)."
             e is ConnectException -> "Connexion refusée par le serveur."
@@ -128,7 +130,8 @@ class LoginActivity : BaseActivity() {
             else -> e.message ?: "Erreur de connexion."
         }
         val detail = "Détail : ${e.javaClass.simpleName} ${e.message ?: ""}".trim() +
-            (ips?.let { "\nIP du serveur : " + it.joinToString(", ") } ?: "") +
+            (host?.let { FluxDns.routeFor(it) }?.let { "\nRésolu via : $it" } ?: "") +
+            (dns?.let { "\n\nDiagnostic DNS\n" + it.format() } ?: "") +
             "\nAdresses essayées : " + list.joinToString(" · ")
         throw Exception("$msg\n\n$detail")
     }

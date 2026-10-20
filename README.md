@@ -159,6 +159,32 @@ sur **Flux TV** : entrez l'URL du serveur, l'utilisateur et le mot de passe, c'e
 - Résolution de sortie : réglez-la sur celle de la TV (1080p le plus souvent) ; inutile de
   sortir en 4K sur une TV 1080p, cela charge la puce graphique.
 
+### DNS externe (DNS-over-HTTPS)
+Par défaut, Flux TV ne demande plus les adresses des serveurs au DNS de la box : il passe par un
+résolveur externe chiffré (DoH, RFC 8484), Cloudflare par défaut. Quad9 et Google sont aussi
+proposés. La connexion, les catalogues, la lecture vidéo et les affiches en profitent, car tout
+passe par le même client réseau (`App.http` → `data/FluxDns.kt`).
+
+Réglages ▸ **Réseau · DNS** :
+- **Résolution DNS** :
+  - *DNS externe (DoH) + repli box* (par défaut) ;
+  - *DNS externe (DoH) strict* : erreur explicite si le résolveur est injoignable ;
+  - *DNS du réseau (box)* : comportement d'origine.
+- **Résolveur externe** : Cloudflare / Quad9 / Google. Les IP d'amorçage sont intégrées, donc
+  la box n'est jamais interrogée pour le nom du résolveur.
+- **Tester la résolution DNS** : compare, pour votre serveur et pour `example.com`, la réponse de
+  la box et celle du DNS externe (adresses, temps de réponse, verdict).
+
+En cas d'échec, l'écran de connexion affiche aussi cette comparaison. Les journaux techniques
+portent le tag `FluxDNS` : `adb logcat -s FluxDNS`.
+
+Seule la résolution change : l'appli se connecte toujours au nom d'hôte d'origine. L'en-tête
+`Host`, le certificat TLS et les redirections restent donc intacts.
+
+Limites : le DoH garantit seulement une réponse DNS non falsifiée par la box. Il ne sert à rien si
+le réseau bloque l'adresse IP du serveur, son port, le trafic HTTP lui-même ou le résolveur DoH.
+En HTTP, le nom du serveur reste visible en clair dans les requêtes.
+
 ---
 
 ## Mettre à jour Flux TV

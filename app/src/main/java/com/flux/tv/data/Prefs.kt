@@ -37,6 +37,15 @@ object Prefs {
     var subtitleSize: Int get() = sp.getInt("subSize", 1); set(v) = sp.edit().putInt("subSize", v).apply()
     var autoplayNext: Boolean get() = sp.getBoolean("autoNext", true); set(v) = sp.edit().putBoolean("autoNext", v).apply()
 
+    // ------------------------------------------------------------------ DNS
+    /** Par défaut : DNS externe (DoH), avec repli sur la box s'il est injoignable. */
+    var dnsMode: DnsMode
+        get() = runCatching { DnsMode.valueOf(str("dnsMode", DnsMode.DOH_FALLBACK.name)) }.getOrDefault(DnsMode.DOH_FALLBACK)
+        set(v) = put("dnsMode", v.name)
+    var dohProvider: DohProvider
+        get() = runCatching { DohProvider.valueOf(str("dohProvider", DohProvider.CLOUDFLARE.name)) }.getOrDefault(DohProvider.CLOUDFLARE)
+        set(v) = put("dohProvider", v.name)
+
     // ------------------------------------------------------------------ profils
     val PROFILE_COLORS = intArrayOf(
         0xFFE50914.toInt(), 0xFF2D7FF9.toInt(), 0xFFF2B705.toInt(), 0xFF1DB954.toInt(),
