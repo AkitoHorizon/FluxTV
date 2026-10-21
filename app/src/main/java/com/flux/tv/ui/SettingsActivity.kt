@@ -91,6 +91,16 @@ class SettingsActivity : BaseActivity() {
                 onFailure = { "Erreur : ${it.message}" },
             )
         }
+        row(R.drawable.ic_search, "Tester le catalogue", "Chaînes, films, séries") { v ->
+            v.text = "Test en cours (jusqu'à quelques minutes)…"
+            lifecycleScope.launch {
+                val res = Repo.api().probeCatalog()
+                v.text = if (res.all { it.ok }) "Tout répond" else "${res.count { !it.ok }} problème(s)"
+                val route = Uri.parse(Prefs.server).host?.let { FluxDns.routeFor(it) }?.let { "Résolu via : $it\n\n" } ?: ""
+                showMenu("Test du catalogue", route + res.joinToString("\n") { (if (it.ok) "✓ " else "✗ ") + it.action + " : " + it.text },
+                    listOf("Fermer" to {}), subtitleLines = 30)
+            }
+        }
         row(R.drawable.ic_restart, "Actualiser les chaînes, films et séries", "") {
             Repo.clear(); toast("Catalogue vidé : il sera rechargé")
         }

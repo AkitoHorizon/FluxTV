@@ -42,8 +42,11 @@ object Repo {
         return locks.getValue(kind).withLock {
             items[kind] ?: run {
                 val a = api()
-                val c = a.categories(kind)
                 val list = a.items(kind)
+                // Sans catégories, le contenu reste affiché (rangée « Tous les … »)
+                val c = try { a.categories(kind) } catch (e: java.io.IOException) {
+                    android.util.Log.w("FluxAPI", "catégories $kind indisponibles", e); emptyList()
+                }
                 list.forEach { byKey[it.key] = it }
                 cats[kind] = c
                 items[kind] = list
@@ -57,9 +60,16 @@ object Repo {
     suspend fun rowsOf(kind: Kind, list: List<Item>): List<Row> = withContext(Dispatchers.Default) {
         val style = if (kind == Kind.LIVE) CardStyle.LOGO else CardStyle.POSTER
         val grouped = list.groupBy { it.categoryId }
-        categories(kind).mapNotNull { c ->
+        val cats = categories(kind)
+        val rows = cats.mapNotNull { c ->
             grouped[c.id]?.takeIf { it.isNotEmpty() }?.let { Row(c.name, it, style, "cat:${kind.prefix}:${c.id}") }
         }
+        // Éléments sans catégorie connue : on ne les perd pas
+        val known = cats.mapTo(HashSet()) { it.id }
+        val orphans = list.filter { it.categoryId !in known }
+        val word = when (kind) { Kind.LIVE -> "Toutes les chaînes"; Kind.MOVIE -> "Tous les films"; Kind.SERIES -> "Toutes les séries" }
+        if (orphans.isEmpty()) rows
+        else rows + Row(if (rows.isEmpty()) word else "Autres", orphans, style, "cat:${kind.prefix}:_autres")
     }
 
     suspend fun details(item: Item): Details {

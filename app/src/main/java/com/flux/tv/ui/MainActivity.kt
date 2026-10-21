@@ -139,7 +139,8 @@ class MainActivity : BaseActivity(), CardListener {
         buildNav()
         btnPlay.setOnClickListener { featured.getOrNull(featuredIndex)?.let { playItem(it) } }
         btnInfo.setOnClickListener { featured.getOrNull(featuredIndex)?.let { openDetails(it) } }
-        findViewById<View>(R.id.retry).setOnClickListener { show(section, focusContent = true) }
+        // « Réessayer » repart du serveur (ignore le cache et refait les connexions)
+        findViewById<View>(R.id.retry).setOnClickListener { Repo.clear(); show(section, focusContent = true) }
         root.viewTreeObserver.addOnGlobalFocusChangeListener { _, now -> if (now != null) onFocusMoved(now) }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -345,7 +346,8 @@ class MainActivity : BaseActivity(), CardListener {
                 when {
                     rows.isEmpty() && s == Section.LIST -> showEmpty("Votre liste est vide",
                         "Ajoutez des films, séries et chaînes avec le bouton « Ma liste », ou par un appui long sur OK.", retry = false)
-                    rows.isEmpty() -> showEmpty("Rien à afficher pour l'instant", "Votre fournisseur ne propose pas de contenu dans cette section.", retry = true)
+                    rows.isEmpty() -> showEmpty("Rien à afficher pour l'instant",
+                        "Le serveur a répondu, mais sans contenu pour cette section. Paramètres ▸ Tester le catalogue donne le détail.", retry = true)
                     featured.isNotEmpty() -> enterBillboard(focus = focusContent)
                     else -> {
                         rows.first().items.firstOrNull()?.let { showItem(it) }
@@ -358,7 +360,8 @@ class MainActivity : BaseActivity(), CardListener {
             } catch (e: Exception) {
                 Log.e("FluxQA", "section load failed", e)
                 skeleton.show(false)
-                showEmpty("Impossible de charger le catalogue", e.message ?: e.javaClass.simpleName, retry = true)
+                showEmpty("Impossible de charger le catalogue",
+                    (e.message ?: e.javaClass.simpleName) + "\n\nParamètres ▸ Tester le catalogue donne le détail.", retry = true)
             }
         }
     }
@@ -413,8 +416,10 @@ class MainActivity : BaseActivity(), CardListener {
         return withContext(Dispatchers.Default) {
             val rows = ArrayList<Row>()
             continueRow(kind)?.let(rows::add)
-            rows += Row("Top 10 des $word du moment", Repo.top10(kind), CardStyle.TOP10, "top10")
-            rows += Row(if (kind == Kind.MOVIE) "Nouveaux films" else "Nouvelles séries", Repo.latest(kind, 40), id = "latest")
+            if (list.isNotEmpty()) {
+                rows += Row("Top 10 des $word du moment", Repo.top10(kind), CardStyle.TOP10, "top10")
+                rows += Row(if (kind == Kind.MOVIE) "Nouveaux films" else "Nouvelles séries", Repo.latest(kind, 40), id = "latest")
+            }
             list.filter { it.ratingValue > 0 }.sortedByDescending { it.ratingValue }.take(40)
                 .takeIf { it.size >= 6 }?.let { rows += Row("Les mieux notés", it, id = "best") }
             rows += cats
