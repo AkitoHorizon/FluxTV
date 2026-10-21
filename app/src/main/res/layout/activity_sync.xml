@@ -113,7 +113,7 @@
 
                 <LinearLayout android:id="@+id/skip" style="@style/PillBtn">
                     <ImageView style="@style/PillIcon" android:src="@drawable/ic_next" />
-                    <TextView style="@style/PillText" android:text="Continuer quand même" />
+                    <TextView style="@style/PillText" android:text="Ouvrir l'appli quand même" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

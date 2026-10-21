@@ -9,7 +9,9 @@ import com.flux.tv.App
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
+import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -38,6 +40,39 @@ class XtreamApi(val server: String, user: String, pass: String) {
         .readTimeout(5, TimeUnit.MINUTES)
         .callTimeout(0, TimeUnit.MILLISECONDS)
         .build()
+    /** Mêmes clients, mais les redirections sont suivies à la main (voir [exec]). */
+    private val httpNR = App.http.newBuilder().followRedirects(false).followSslRedirects(false).build()
+    private val syncNR = syncHttp.newBuilder().followRedirects(false).followSslRedirects(false).build()
+
+    /** Dernière redirection rencontrée (pour le diagnostic). */
+    @Volatile var lastRedirect: String? = null
+        private set
+
+    /**
+     * Suit les redirections en conservant tous les paramètres de la requête et la méthode (POST).
+     * Certains serveurs Xtream redirigent vers un autre serveur en ne gardant que l'identifiant
+     * et le mot de passe : la demande (« action ») se perd et seules les infos du compte reviennent.
+     */
+    private fun exec(client: OkHttpClient, req: Request): Response {
+        var r = req
+        repeat(8) {
+            val resp = client.newCall(r).execute()
+            if (!resp.isRedirect) return resp
+            val loc = resp.header("Location")
+            resp.close()
+            val target = loc?.let { r.url.resolve(it) } ?: throw IOException("redirection sans adresse (HTTP ${resp.code})")
+            val merged = target.newBuilder().apply {
+                for (name in r.url.queryParameterNames) {
+                    if (target.queryParameter(name) == null) r.url.queryParameterValues(name).forEach { v -> addQueryParameter(name, v) }
+                }
+            }.build()
+            Log.i(TAG, "redirection ${r.url.host} -> ${merged.host}${merged.encodedPath}")
+            lastRedirect = merged.host
+            r = r.newBuilder().url(merged).build()
+        }
+        throw IOException("trop de redirections")
+    }
+
     private val base = "$server/player_api.php?username=${URLEncoder.encode(user, "UTF-8")}" +
         "&password=${URLEncoder.encode(pass, "UTF-8")}"
     private val u = Uri.encode(user)
@@ -59,7 +94,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
     // ------------------------------------------------------------------ réseau
 
     private fun fetchUrl(url: String): String =
-        http.newCall(Request.Builder().url(url).build()).execute().use { r ->
+        exec(httpNR, Request.Builder().url(url).build()).use { r ->
             if (!r.isSuccessful) throw IOException("Erreur serveur (HTTP ${r.code})")
             r.body?.string() ?: ""
         }
@@ -69,8 +104,23 @@ class XtreamApi(val server: String, user: String, pass: String) {
      * classique et renvoient seulement les infos du compte : on essaie alors les autres formes
      * utilisées par les lecteurs IPTV, et on retient celle qui marche.
      */
-    private fun apiRequest(mode: Int, params: String): Request {
-        val url = "$server/player_api.php"
+    /**
+     * Serveurs à essayer : l'adresse saisie, puis l'adresse réelle annoncée par le serveur
+     * à la connexion (server_info), si elle est différente.
+     */
+    private fun bases(): List<String> = listOfNotNull(server, Prefs.altServer.takeIf { it.isNotEmpty() && it != server })
+
+    /** Combinaisons (serveur, forme de requête), celle qui a déjà marché en premier. */
+    private fun modeOrder(): List<Int> {
+        val all = bases().indices.flatMap { b -> (0..2).map { b * 3 + it } }
+        val m = Prefs.apiMode
+        return if (m in all) listOf(m) + all.filter { it != m } else all
+    }
+
+    private fun apiRequest(combo: Int, params: String): Request {
+        val srv = bases().getOrElse(combo / 3) { server }
+        val mode = combo % 3
+        val url = "$srv/player_api.php"
         return when (mode) {
             1 -> Request.Builder().url(url).post(FormBody.Builder().apply {
                 add("username", userRaw); add("password", passRaw)
@@ -80,32 +130,30 @@ class XtreamApi(val server: String, user: String, pass: String) {
                 }
             }.build()).build()
             2 -> Request.Builder().url("$url?$params&username=$userQ&password=$passQ").build()
-            else -> Request.Builder().url("$base&$params").build()
+            else -> Request.Builder().url("$url?username=$userQ&password=$passQ&$params").build()
         }
     }
 
-    private fun modeOrder(): List<Int> {
-        val m = Prefs.apiMode.coerceIn(0, 2)
-        return listOf(m) + (0..2).filter { it != m }
-    }
-
     private fun remember(mode: Int) {
-        if (Prefs.apiMode != mode) { Prefs.apiMode = mode; Log.i(TAG, "forme de requête retenue : ${MODE_NAMES[mode]}") }
+        if (Prefs.apiMode != mode) { Prefs.apiMode = mode; Log.i(TAG, "forme de requête retenue : ${modeName(mode)}") }
     }
 
     private fun fetch(params: String): String {
         for (mode in modeOrder()) {
-            val text = http.newCall(apiRequest(mode, params)).execute().use { r ->
+            val text = exec(httpNR, apiRequest(mode, params)).use { r ->
                 if (!r.isSuccessful) throw IOException("Erreur serveur (HTTP ${r.code})")
                 r.body?.string() ?: ""
             }
             if (!isAccountEcho(text.take(400))) { remember(mode); return text }
         }
-        throw AccountEchoException()
+        throw AccountEchoException(lastRedirect)
     }
 
     /** Le serveur renvoie les infos du compte au lieu de la liste demandée. */
-    class AccountEchoException : IOException("le serveur ignore la demande et renvoie seulement les infos du compte")
+    class AccountEchoException(redirect: String? = null) : IOException(
+        "le serveur ignore la demande et renvoie seulement les infos du compte" +
+            (redirect?.let { " (redirigé vers un autre serveur)" } ?: "")
+    )
 
     /**
      * Liste du catalogue stockée de façon permanente (dossier de l'appli, pas le cache que
@@ -134,9 +182,9 @@ class XtreamApi(val server: String, user: String, pass: String) {
         val t0 = System.currentTimeMillis()
         try {
             for (mode in modeOrder()) {
-                save(syncHttp.newCall(apiRequest(mode, "action=$action")), tmp, onBytes)
+                save(apiRequest(mode, "action=$action"), tmp, onBytes)
                 if (isAccountEcho(head(tmp))) {
-                    Log.w(TAG, "$action : forme « ${MODE_NAMES[mode]} » ignorée par le serveur")
+                    Log.w(TAG, "$action : forme « ${modeName(mode)} » ignorée par le serveur")
                     continue
                 }
                 checkJson(action, tmp)
@@ -145,7 +193,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
                 Log.i(TAG, "$action : ${f.length()} octets en ${System.currentTimeMillis() - t0} ms")
                 return f.length()
             }
-            throw AccountEchoException()
+            throw AccountEchoException(lastRedirect)
         } catch (e: IOException) {
             tmp.delete()
             Log.w(TAG, "$action échec après ${System.currentTimeMillis() - t0} ms", e)
@@ -154,8 +202,8 @@ class XtreamApi(val server: String, user: String, pass: String) {
     }
 
     /** Écrit la réponse dans un fichier en signalant la progression. */
-    private fun save(call: okhttp3.Call, out: File, onBytes: ((Long) -> Unit)?) {
-        call.execute().use { r ->
+    private fun save(req: Request, out: File, onBytes: ((Long) -> Unit)?) {
+        exec(syncNR, req).use { r ->
             if (!r.isSuccessful) throw IOException("le serveur a répondu HTTP ${r.code}")
             val body = r.body ?: throw IOException("réponse vide")
             out.outputStream().buffered(1 shl 16).use { o ->
@@ -178,8 +226,8 @@ class XtreamApi(val server: String, user: String, pass: String) {
     // ------------------------------------------------------------------ playlist M3U (secours)
 
     /** Playlist complète (chaînes, films, séries) au format M3U, proposée par tous les serveurs Xtream. */
-    fun m3uRequest(): Request =
-        Request.Builder().url("$server/get.php?username=$userQ&password=$passQ&type=m3u_plus&output=ts").build()
+    fun m3uRequest(srv: String = server): Request =
+        Request.Builder().url("$srv/get.php?username=$userQ&password=$passQ&type=m3u_plus&output=ts").build()
 
     /**
      * Construit tout le catalogue depuis la playlist M3U quand l'API ne donne pas les listes.
@@ -189,7 +237,11 @@ class XtreamApi(val server: String, user: String, pass: String) {
         val dir = catalogDir()
         val playlist = File(dir, "playlist.m3u.tmp")
         try {
-            save(syncHttp.newCall(m3uRequest()), playlist, onBytes)
+            var last: IOException? = null
+            for (srv in bases()) {
+                try { save(m3uRequest(srv), playlist, onBytes); last = null; break } catch (e: IOException) { last = e }
+            }
+            last?.let { throw IOException("la liste complète (get.php) est refusée : ${it.message}", it) }
             return M3uImport.convert(playlist, dir)
         } finally {
             playlist.delete()
@@ -217,12 +269,28 @@ class XtreamApi(val server: String, user: String, pass: String) {
         }
         val ui = o.optJSONObject("user_info") ?: throw IOException("Réponse invalide du serveur")
         if (ui.optInt("auth", 0) != 1) throw IOException("Identifiant ou mot de passe incorrect")
+        rememberServerInfo(o.optJSONObject("server_info"))
         AccountInfo(
             ui.str("status") ?: "",
             ui.str("exp_date")?.toLongOrNull(),
             ui.str("active_cons") ?: "?",
             ui.str("max_connections") ?: "?",
         )
+    }
+
+    /**
+     * Adresse réelle annoncée par le serveur (server_info : url, port, protocole).
+     * Beaucoup de lecteurs IPTV l'utilisent pour la suite ; on la garde comme second essai.
+     */
+    private fun rememberServerInfo(si: JSONObject?) {
+        val host = si?.str("url")?.removePrefix("http://")?.removePrefix("https://")?.trimEnd('/') ?: return
+        val proto = si.str("server_protocol")?.takeIf { it == "https" || it == "http" } ?: "http"
+        val port = (if (proto == "https") si.str("https_port") else si.str("port"))?.takeIf { it != "0" }
+        val alt = "$proto://$host" + (port?.takeUnless { (proto == "http" && it == "80") || (proto == "https" && it == "443") }?.let { ":$it" } ?: "")
+        if (alt != server && alt != Prefs.altServer) {
+            Prefs.altServer = alt
+            Log.i(TAG, "adresse annoncée par le serveur : $proto://••• (port ${port ?: "défaut"})")
+        }
     }
 
     // ------------------------------------------------------------------ listes
@@ -421,7 +489,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
 
     private class Peek(val code: Int, val bytes: Long, val head: String, val redirected: String?)
 
-    private fun peek(req: Request): Peek = syncHttp.newCall(req).execute().use { r ->
+    private fun peek(req: Request): Peek = exec(syncNR, req.also { lastRedirect = null }).use { r ->
         var n = 0L; var head = ""
         r.body?.byteStream()?.let { input ->
             val buf = ByteArray(1 shl 16)
@@ -431,7 +499,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
                 n += k
             }
         }
-        val moved = r.priorResponse?.let { r.request.url.host.takeIf { h -> h != serverHost } ?: "même serveur" }
+        val moved = lastRedirect?.let { if (it == serverHost) "même serveur" else it }
         Peek(r.code, n, head.trim(), moved)
     }
 
@@ -439,18 +507,18 @@ class XtreamApi(val server: String, user: String, pass: String) {
         val t0 = System.currentTimeMillis()
         return try {
             var last: Peek? = null
-            for (mode in 0..2) {
+            for (mode in bases().indices.flatMap { b -> (0..2).map { b * 3 + it } }) {
                 val pk = peek(apiRequest(mode, "action=$action"))
                 last = pk
                 if (pk.code in 200..299 && pk.head.startsWith("[")) {
-                    val how = if (mode == 0) "" else " (forme « ${MODE_NAMES[mode]} »)"
+                    val how = if (mode == 0) "" else " (${modeName(mode)})"
                     return Probe(action, true, "${size(pk.bytes)} · ${secs(t0)}$how" + redirectNote(pk))
                 }
                 if (!isAccountEcho(pk.head)) break   // autre problème : inutile d'essayer les autres formes
             }
             val pk = last!!
             val what = when {
-                isAccountEcho(pk.head) -> "renvoie les infos du compte au lieu de la liste (3 formes de requête essayées)"
+                isAccountEcho(pk.head) -> "renvoie les infos du compte au lieu de la liste (${bases().size * 3} formes de requête essayées)"
                 pk.head.startsWith("{") -> "objet JSON au lieu d'une liste : « ${mask(pk.head.take(70))} »"
                 pk.head.isEmpty() -> "réponse vide"
                 pk.head.startsWith("<") -> "page web au lieu des données : « ${mask(pk.head.take(70))} »"
@@ -466,7 +534,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
         val t0 = System.currentTimeMillis()
         return try {
             var entries = 0L; var n = 0L; var first = ""
-            val code = syncHttp.newCall(m3uRequest()).execute().use { r ->
+            val code = exec(syncNR, m3uRequest().also { lastRedirect = null }).use { r ->
                 r.body?.byteStream()?.bufferedReader()?.let { rd ->
                     while (true) {
                         val line = rd.readLine() ?: break
@@ -479,7 +547,8 @@ class XtreamApi(val server: String, user: String, pass: String) {
             }
             val ok = code in 200..299 && first.startsWith("#EXTM3U") && entries > 0
             Probe("get.php", ok, "HTTP $code · ${size(n)} · ${secs(t0)} · " +
-                if (ok) "$entries entrées" else "« ${mask(first.take(70))} »")
+                (if (ok) "$entries entrées" else "« ${mask(first.take(70))} »") +
+                (lastRedirect?.let { " · redirigé (${if (it == serverHost) "même serveur" else it})" } ?: ""))
         } catch (e: IOException) {
             Probe("get.php", false, "échec après ${secs(t0)} : ${explain(e)}")
         }.also { Log.i(TAG, "probe m3u -> ${it.text}") }
@@ -508,6 +577,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
     companion object {
         private const val TAG = "FluxAPI"
         private val MODE_NAMES = arrayOf("GET", "POST", "GET inversé")
+        private fun modeName(combo: Int) = MODE_NAMES[combo % 3] + if (combo >= 3) " via l'adresse annoncée par le serveur" else ""
 
         fun isAccountEcho(head: String) = head.trimStart().startsWith("{") && head.contains("\"user_info\"")
 

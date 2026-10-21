@@ -87,7 +87,7 @@ class SyncActivity : BaseActivity() {
         val showButtons = s.error != null && !s.running
         if (showButtons && buttons.visibility != View.VISIBLE) {
             buttons.show(true)
-            skip.show(s.canSkip)
+            skip.show(true)   // permet d'ouvrir les Paramètres (Tester le catalogue) même sans catalogue
             retry.requestFocus()
         } else if (!showButtons) buttons.show(false)
 

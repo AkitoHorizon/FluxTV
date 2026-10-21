@@ -73,6 +73,8 @@ object CatalogSync {
     private suspend fun run() {
         val api = Repo.api()
         _state.value = initial().copy(running = true, message = "Connexion au serveur…")
+        // Rafraîchit l'adresse réelle annoncée par le serveur (server_info), utile en second essai
+        try { api.auth() } catch (e: CancellationException) { throw e } catch (e: Exception) { Log.w(TAG, "auth avant synchro", e) }
         Log.i(TAG, "synchronisation du catalogue : début")
         for ((i, action) in XtreamApi.ACTIONS.withIndex()) {
             val file = api.catalogFile(action)
