@@ -31,8 +31,12 @@ import java.util.concurrent.TimeUnit
 class XtreamApi(val server: String, user: String, pass: String) {
 
     private val http = App.http
-    /** Les grosses listes (films, séries, chaînes) peuvent mettre plus d'une minute à être générées par le serveur. */
-    private val slowHttp = App.http.newBuilder().readTimeout(120, TimeUnit.SECONDS).build()
+    /** Les grosses listes (films, séries, chaînes) peuvent mettre plusieurs minutes à être générées par le serveur. */
+    private val syncHttp = App.http.newBuilder()
+        .connectTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.MINUTES)
+        .callTimeout(0, TimeUnit.MILLISECONDS)
+        .build()
     private val base = "$server/player_api.php?username=${URLEncoder.encode(user, "UTF-8")}" +
         "&password=${URLEncoder.encode(pass, "UTF-8")}"
     private val u = Uri.encode(user)
@@ -50,31 +54,67 @@ class XtreamApi(val server: String, user: String, pass: String) {
             r.body?.string() ?: ""
         }
 
+    /**
+     * Liste du catalogue stockée de façon permanente (dossier de l'appli, pas le cache que
+     * Android peut vider) : une fois téléchargée, elle sert à chaque lancement sans attendre le serveur.
+     * Si elle manque (ex. synchronisation passée), on la télécharge à la demande.
+     */
     private fun cached(action: String): File {
-        val dir = File(App.instance.cacheDir, "api").apply { mkdirs() }
-        val f = File(dir, "$action.json")
-        val fresh = f.exists() && f.length() > 2 &&
-            System.currentTimeMillis() - f.lastModified() < CACHE_TTL
-        if (fresh) return f
+        val f = catalogFile(action)
+        if (f.exists()) return f
+        try {
+            download(action, null)
+        } catch (e: IOException) {
+            throw IOException("${label(action)} : ${explain(e)}", e)
+        }
+        return f
+    }
+
+    /**
+     * Télécharge une liste du catalogue dans un fichier temporaire puis remplace l'ancienne
+     * d'un coup (jamais de fichier à moitié écrit). Pas de durée maximale : on attend tant que
+     * le serveur envoie des données, et jusqu'à 5 minutes de silence (temps de génération).
+     */
+    fun download(action: String, onBytes: ((Long) -> Unit)?): Long {
+        val f = catalogFile(action)
+        val tmp = File(f.parentFile, "$action.tmp")
         val t0 = System.currentTimeMillis()
-        return try {
-            val tmp = File(dir, "$action.tmp")
-            slowHttp.newCall(Request.Builder().url("$base&action=$action").build()).execute().use { r ->
+        try {
+            syncHttp.newCall(Request.Builder().url("$base&action=$action").build()).execute().use { r ->
                 if (!r.isSuccessful) throw IOException("le serveur a répondu HTTP ${r.code}")
                 val body = r.body ?: throw IOException("réponse vide")
-                tmp.outputStream().buffered(1 shl 16).use { out -> body.byteStream().copyTo(out, 1 shl 16) }
+                tmp.outputStream().buffered(1 shl 16).use { out ->
+                    val input = body.byteStream()
+                    val buf = ByteArray(1 shl 16)
+                    var n = 0L; var lastTick = 0L
+                    while (true) {
+                        val k = input.read(buf); if (k < 0) break
+                        out.write(buf, 0, k); n += k
+                        if (onBytes != null && n - lastTick > 256 * 1024) { lastTick = n; onBytes(n) }
+                    }
+                    onBytes?.invoke(n)
+                }
             }
-            Log.i(TAG, "$action : ${tmp.length()} octets en ${System.currentTimeMillis() - t0} ms")
-            if (f.exists()) f.delete()
-            if (!tmp.renameTo(f)) throw IOException("écriture du cache impossible")
-            f
+            checkJson(action, tmp)
+            if (!tmp.renameTo(f)) throw IOException("écriture du catalogue impossible")
+            Log.i(TAG, "$action : ${f.length()} octets en ${System.currentTimeMillis() - t0} ms")
+            return f.length()
         } catch (e: IOException) {
+            tmp.delete()
             Log.w(TAG, "$action échec après ${System.currentTimeMillis() - t0} ms", e)
-            // Réseau en panne : on se rabat sur l'ancien cache s'il existe
-            if (f.exists() && f.length() > 2) f
-            else throw IOException("${label(action)} : ${explain(e)}", e)
+            throw e
         }
     }
+
+    /** Refuse une réponse qui n'est manifestement pas du JSON (page d'erreur, blocage…). */
+    private fun checkJson(action: String, f: File) {
+        val head = f.inputStream().use { i -> ByteArray(120).let { b -> String(b, 0, i.read(b).coerceAtLeast(0)) } }.trim()
+        if (!head.startsWith("[") && !head.startsWith("{")) {
+            throw IOException("réponse illisible du serveur (début : « ${head.take(80)} »)")
+        }
+    }
+
+    fun catalogFile(action: String) = File(catalogDir(), "$action.json")
 
     // ------------------------------------------------------------------ compte
 
@@ -289,7 +329,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
     private fun probe(action: String): Probe {
         val t0 = System.currentTimeMillis()
         return try {
-            slowHttp.newCall(Request.Builder().url("$base&action=$action").build()).execute().use { r ->
+            syncHttp.newCall(Request.Builder().url("$base&action=$action").build()).execute().use { r ->
                 val body = r.body
                 val bytes = body?.byteStream()?.let { input ->
                     var n = 0L; var head = ""
@@ -317,17 +357,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
         }.also { Log.i(TAG, "probe $action -> ${it.text}") }
     }
 
-    private fun label(action: String) = when (action) {
-        "get_live_categories" -> "Catégories des chaînes"
-        "get_live_streams" -> "Liste des chaînes"
-        "get_vod_categories" -> "Catégories des films"
-        "get_vod_streams" -> "Liste des films"
-        "get_series_categories" -> "Catégories des séries"
-        "get_series" -> "Liste des séries"
-        else -> action
-    }
-
-    private fun explain(e: IOException): String = when (e) {
+    fun explain(e: IOException): String = when (e) {
         is SocketTimeoutException -> "le serveur met trop de temps à répondre (délai dépassé)"
         is UnknownHostException -> "serveur introuvable (${e.message})"
         is ConnectException -> "connexion refusée ou bloquée"
@@ -337,6 +367,30 @@ class XtreamApi(val server: String, user: String, pass: String) {
 
     companion object {
         private const val TAG = "FluxAPI"
-        private const val CACHE_TTL = 6L * 60 * 60 * 1000   // 6 h
+
+        /** Les 6 listes du catalogue, dans l'ordre de téléchargement (les plus légères d'abord). */
+        val ACTIONS = listOf(
+            "get_live_categories", "get_vod_categories", "get_series_categories",
+            "get_live_streams", "get_vod_streams", "get_series",
+        )
+
+        fun label(action: String) = when (action) {
+            "get_live_categories" -> "Catégories des chaînes"
+            "get_live_streams" -> "Liste des chaînes"
+            "get_vod_categories" -> "Catégories des films"
+            "get_vod_streams" -> "Liste des films"
+            "get_series_categories" -> "Catégories des séries"
+            "get_series" -> "Liste des séries"
+            else -> action
+        }
+
+        fun catalogDir() = File(App.instance.filesDir, "catalog").apply { mkdirs() }
+
+        /** Âge de la plus ancienne liste du catalogue (ms), ou null s'il en manque une. */
+        fun catalogAge(): Long? {
+            val files = ACTIONS.map { File(catalogDir(), "$it.json") }
+            if (files.any { !it.exists() }) return null
+            return System.currentTimeMillis() - files.minOf { it.lastModified() }
+        }
     }
 }

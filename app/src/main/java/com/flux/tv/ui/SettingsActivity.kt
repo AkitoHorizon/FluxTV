@@ -102,7 +102,14 @@ class SettingsActivity : BaseActivity() {
             }
         }
         row(R.drawable.ic_restart, "Actualiser les chaînes, films et séries", "") {
-            Repo.clear(); toast("Catalogue vidé : il sera rechargé")
+            showMenu("Retélécharger tout le catalogue ?", "Les chaînes, films et séries sont récupérés à nouveau depuis le serveur (plusieurs minutes).", listOf(
+                "Retélécharger" to {
+                    Repo.clear()
+                    startActivity(Intent(this, SyncActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                    finish()
+                },
+                "Annuler" to {},
+            ))
         }
         row(R.drawable.ic_back, "Se déconnecter", "") {
             showMenu("Se déconnecter ?", "Les identifiants IPTV seront effacés de ce boîtier.", listOf(

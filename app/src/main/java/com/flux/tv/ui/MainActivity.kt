@@ -100,6 +100,12 @@ class MainActivity : BaseActivity(), CardListener {
             startActivity(Intent(this, LoginActivity::class.java))
             finish(); return
         }
+        // Catalogue pas encore téléchargé (première connexion, ou mise à jour depuis la v2.2)
+        if (!Prefs.catalogReady) {
+            startActivity(Intent(this, SyncActivity::class.java))
+            finish(); return
+        }
+        Repo.refreshIfStale()
         setContentView(R.layout.activity_main)
         root = findViewById(R.id.root)
         heroImage = findViewById(R.id.heroImage)
@@ -139,8 +145,8 @@ class MainActivity : BaseActivity(), CardListener {
         buildNav()
         btnPlay.setOnClickListener { featured.getOrNull(featuredIndex)?.let { playItem(it) } }
         btnInfo.setOnClickListener { featured.getOrNull(featuredIndex)?.let { openDetails(it) } }
-        // « Réessayer » repart du serveur (ignore le cache et refait les connexions)
-        findViewById<View>(R.id.retry).setOnClickListener { Repo.clear(); show(section, focusContent = true) }
+        // « Réessayer » : relit le catalogue ; une liste manquante est retéléchargée
+        findViewById<View>(R.id.retry).setOnClickListener { Repo.dropMemory(); show(section, focusContent = true) }
         root.viewTreeObserver.addOnGlobalFocusChangeListener { _, now -> if (now != null) onFocusMoved(now) }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {

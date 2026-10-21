@@ -159,6 +159,19 @@ sur **Flux TV** : entrez l'URL du serveur, l'utilisateur et le mot de passe, c'e
 - Résolution de sortie : réglez-la sur celle de la TV (1080p le plus souvent) ; inutile de
   sortir en 4K sur une TV 1080p, cela charge la puce graphique.
 
+### Premier chargement du catalogue
+À la première connexion, l'écran **Préparation de votre catalogue** télécharge les six listes du
+serveur : catégories et listes des chaînes, des films et des séries. Il n'y a pas de limite de
+durée : l'appli attend tant que le serveur envoie des données, et jusqu'à 5 minutes de silence
+pendant qu'il prépare une liste. Chaque liste est retentée 5 fois en cas de coupure, et les
+listes déjà reçues sont conservées en cas de nouvel essai.
+
+Le catalogue est ensuite stocké de façon permanente sur le boîtier : les ouvertures suivantes
+sont immédiates. Une fois par jour, il est remis à jour discrètement en arrière-plan, et l'ancien
+reste utilisé tant que le nouveau n'est pas arrivé en entier. Paramètres ▸ **Actualiser les
+chaînes, films et séries** relance un téléchargement complet. Paramètres ▸ **Tester le
+catalogue** affiche pour chaque liste le code HTTP, la taille et la durée.
+
 ### DNS externe (DNS-over-HTTPS)
 Par défaut, Flux TV ne demande plus les adresses des serveurs au DNS de la box : il passe par un
 résolveur externe chiffré (DoH, RFC 8484), Quad9 par défaut. Cloudflare et Google sont aussi

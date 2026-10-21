@@ -2,11 +2,16 @@ package com.flux.tv.data
 
 import android.util.LruCache
 import com.flux.tv.App
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
 /** Données en mémoire partagées par tous les écrans. */
@@ -44,7 +49,7 @@ object Repo {
                 val a = api()
                 val list = a.items(kind)
                 // Sans catégories, le contenu reste affiché (rangée « Tous les … »)
-                val c = try { a.categories(kind) } catch (e: java.io.IOException) {
+                val c = try { a.categories(kind) } catch (e: IOException) {
                     android.util.Log.w("FluxAPI", "catégories $kind indisponibles", e); emptyList()
                 }
                 list.forEach { byKey[it.key] = it }
@@ -96,10 +101,49 @@ object Repo {
             .sortedWith(compareByDescending<Item> { it.ratingValue }.thenByDescending { it.added })
             .take(n).toList()
 
+    /** Oublie le catalogue (mémoire + fichiers) : la prochaine ouverture refait la synchronisation complète. */
     fun clear() {
         api = null
+        Prefs.catalogReady = false
+        refreshJob?.cancel()
+        CatalogSync.cancel()
+        dropMemory()
+        XtreamApi.catalogDir().deleteRecursively()
+        File(App.instance.cacheDir, "api").deleteRecursively()   // ancien emplacement (v2.2)
+    }
+
+    /** Vide seulement la mémoire : les écrans se rechargent depuis les fichiers déjà téléchargés. */
+    fun dropMemory() {
         items.clear(); cats.clear(); byKey.clear(); details.evictAll(); top10.clear()
-        File(App.instance.cacheDir, "api").deleteRecursively()
         generation++
     }
+
+    /** Comme [dropMemory], depuis n'importe quel fil d'exécution. */
+    fun dropMemoryAsync() { bg.launch(Dispatchers.Main) { dropMemory() } }
+
+    // ------------------------------------------------------------------ mise à jour en arrière-plan
+
+    private val bg = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile private var refreshJob: Job? = null
+
+    /**
+     * Si le catalogue a plus de 24 h, on le retélécharge discrètement : l'appli reste utilisable
+     * avec l'ancien, qui n'est remplacé que liste par liste, une fois chacune reçue en entier.
+     */
+    fun refreshIfStale() {
+        val age = XtreamApi.catalogAge() ?: return
+        if (age < REFRESH_AFTER || refreshJob?.isActive == true) return
+        val a = api()
+        refreshJob = bg.launch {
+            var changed = false
+            for (action in XtreamApi.ACTIONS) {
+                try { a.download(action, null); changed = true } catch (e: IOException) {
+                    android.util.Log.w("FluxAPI", "mise à jour de fond $action échouée, on garde l'ancienne liste", e)
+                }
+            }
+            if (changed) withContext(Dispatchers.Main) { dropMemory() }
+        }
+    }
+
+    private const val REFRESH_AFTER = 24L * 60 * 60 * 1000
 }

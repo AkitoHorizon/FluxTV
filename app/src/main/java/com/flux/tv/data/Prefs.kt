@@ -27,6 +27,8 @@ object Prefs {
     fun saveAccount(s: String, u: String, p: String) =
         sp.edit().putString("server", s).putString("user", u).putString("pass", p).commit()
     fun clearAccount() = sp.edit().remove("server").remove("user").remove("pass").apply()
+    /** true une fois la première synchronisation du catalogue terminée (ou passée volontairement). */
+    var catalogReady: Boolean get() = sp.getBoolean("catalogReady", false); set(v) = sp.edit().putBoolean("catalogReady", v).commit().let { }
 
     // ------------------------------------------------------------------ réglages globaux
     var liveFormat: String get() = str("liveFormat", "ts"); set(v) = put("liveFormat", v)

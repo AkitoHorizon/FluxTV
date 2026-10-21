@@ -79,8 +79,8 @@ class LoginActivity : BaseActivity() {
             try {
                 val ok = tryVariants(s, u, p)
                 withContext(Dispatchers.IO) { Prefs.saveAccount(ok, u, p) }
-                Repo.clear()
-                startActivity(Intent(this@LoginActivity, MainActivity::class.java)
+                Repo.clear()   // nouveau compte : synchronisation complète du catalogue
+                startActivity(Intent(this@LoginActivity, SyncActivity::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
                 finish()
             } catch (e: CancellationException) {

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_deep"
+    android:keepScreenOn="true">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/glow_red" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="72dp"
+        android:paddingEnd="72dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/display_bold"
+                android:letterSpacing="0.04"
+                android:shadowColor="#80E50914"
+                android:shadowRadius="30"
+                android:text="FLUX"
+                android:textColor="@color/red"
+                android:textSize="96sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:fontFamily="@font/inter_bold"
+                android:text="Préparation de votre catalogue"
+                android:textColor="@color/text"
+                android:textSize="26sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:lineSpacingExtra="4dp"
+                android:maxWidth="440dp"
+                android:text="Flux récupère toutes vos chaînes, tous vos films et toutes vos séries. Selon votre fournisseur, cela peut prendre plusieurs minutes.\n\nCette étape n'a lieu qu'une fois : ensuite, tout est déjà en place à chaque ouverture."
+                android:textColor="@color/text2"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="460dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_panel"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <LinearLayout
+                android:id="@+id/steps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <ProgressBar
+                android:id="@+id/progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_marginTop="20dp"
+                android:max="1000"
+                android:progressDrawable="@drawable/progress_red" />
+
+            <TextView
+                android:id="@+id/message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:fontFamily="@font/inter_medium"
+                android:maxLines="3"
+                android:textColor="@color/text2"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="#33E87C03"
+                android:padding="10dp"
+                android:textColor="#FFB86B"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/buttons"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <LinearLayout android:id="@+id/retry" style="@style/PillBtn">
+                    <ImageView style="@style/PillIcon" android:src="@drawable/ic_restart" />
+                    <TextView style="@style/PillText" android:text="Réessayer" />
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/skip" style="@style/PillBtn">
+                    <ImageView style="@style/PillIcon" android:src="@drawable/ic_next" />
+                    <TextView style="@style/PillText" android:text="Continuer quand même" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

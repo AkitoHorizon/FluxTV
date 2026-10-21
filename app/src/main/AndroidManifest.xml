@@ -45,6 +45,7 @@
             android:screenOrientation="landscape"
             android:theme="@style/Theme.Flux.Splash" />
         <activity android:name=".ui.LoginActivity" android:screenOrientation="landscape" android:windowSoftInputMode="adjustPan" />
+        <activity android:name=".ui.SyncActivity" android:screenOrientation="landscape" android:launchMode="singleTask" />
         <activity android:name=".ui.DetailActivity" android:screenOrientation="landscape" />
         <activity android:name=".ui.LiveActivity" android:screenOrientation="landscape" />
         <activity android:name=".ui.SearchActivity" android:screenOrientation="landscape" android:windowSoftInputMode="stateAlwaysHidden|adjustNothing" />
