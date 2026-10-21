@@ -74,7 +74,17 @@ object CatalogSync {
         val api = Repo.api()
         _state.value = initial().copy(running = true, message = "Connexion au serveur…")
         // Rafraîchit l'adresse réelle annoncée par le serveur (server_info), utile en second essai
-        try { api.auth() } catch (e: CancellationException) { throw e } catch (e: Exception) { Log.w(TAG, "auth avant synchro", e) }
+        val account = try { api.auth() } catch (e: CancellationException) { throw e } catch (e: Exception) { Log.w(TAG, "auth avant synchro", e); null }
+        // Abonnement expiré ou suspendu : le serveur accepte la connexion mais refuse tout le contenu
+        account?.blockedReason()?.let { why ->
+            _state.value = _state.value.copy(
+                steps = _state.value.steps.map { it.copy(status = Status.FAILED) },
+                running = false, error = why,
+                message = "Le serveur refuse le contenu pour ce compte.",
+            )
+            Log.w(TAG, "abonnement inactif : ${account.status}")
+            return
+        }
         Log.i(TAG, "synchronisation du catalogue : début")
         for ((i, action) in XtreamApi.ACTIONS.withIndex()) {
             val file = api.catalogFile(action)

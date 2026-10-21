@@ -48,7 +48,20 @@ class PlayItem(
     val episode: Episode? = null,
 )
 
-class AccountInfo(val status: String, val expires: Long?, val active: String, val max: String)
+class AccountInfo(val status: String, val expires: Long?, val active: String, val max: String) {
+    /** Message clair si l'abonnement ne donne plus accès au contenu, sinon null. */
+    fun blockedReason(): String? {
+        val st = status.lowercase()
+        val date = expires?.let { java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.FRANCE).format(java.util.Date(it * 1000)) }
+        val expired = expires != null && expires * 1000 < System.currentTimeMillis()
+        return when {
+            st == "expired" || expired -> "Votre abonnement IPTV est expiré" + (date?.let { " (depuis le $it)" } ?: "") +
+                ". Le serveur accepte la connexion mais ne fournit plus les chaînes, films et séries : renouvelez-le auprès de votre fournisseur."
+            st.isNotEmpty() && st != "active" -> "Votre compte IPTV est « $status » : le serveur ne fournit pas le contenu. Contactez votre fournisseur."
+            else -> null
+        }
+    }
+}
 
 class Episode(
     val id: String,
