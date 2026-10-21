@@ -13,6 +13,7 @@ jobs:
       matrix:
         include:
           - name: android71
+            echo: "1"     # serveur qui ignore « action » (cas réel) : catalogue via get.php
             api: 25
             target: google_apis
             profile: tv_1080p
@@ -39,7 +40,7 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core > /dev/null
           pip install -q pillow
           bash tools/ci/make_media.sh
-          nohup python3 tools/ci/mock_xtream.py media > mock.log 2>&1 &
+          MOCK_ECHO="${{ matrix.echo }}" nohup python3 tools/ci/mock_xtream.py media > mock.log 2>&1 &
           sleep 3 && curl -s "http://localhost:8000/player_api.php?username=demo&password=demo" | head -c 120
 
       - name: Activer KVM

@@ -90,6 +90,11 @@ object CatalogSync {
                     break
                 } catch (e: CancellationException) {
                     throw e
+                } catch (e: XtreamApi.AccountEchoException) {
+                    // L'API ne donne pas les listes : on passe par la liste complète du serveur
+                    Log.w(TAG, "$action : l'API renvoie les infos du compte, passage à get.php")
+                    if (importFull(api)) finish()
+                    return
                 } catch (e: IOException) {
                     val why = api.explain(e)
                     if (attempt >= ATTEMPTS) {
@@ -107,9 +112,58 @@ object CatalogSync {
                 }
             }
         }
+        finish()
+    }
+
+    private fun finish() {
         Prefs.catalogReady = true
         Repo.dropMemoryAsync()
         Log.i(TAG, "synchronisation du catalogue : terminée")
         _state.value = _state.value.copy(running = false, finished = true, message = "Catalogue prêt")
+    }
+
+    /**
+     * Secours : le serveur Xtream ne renvoie pas les listes séparées, on récupère sa liste
+     * complète (get.php, mêmes identifiants) et on la range en chaînes, films et séries.
+     */
+    private suspend fun importFull(api: XtreamApi): Boolean {
+        var attempt = 1
+        while (true) {
+            _state.value = _state.value.copy(
+                steps = _state.value.steps.map { it.copy(status = Status.RUNNING, bytes = 0, note = "via la liste complète") },
+                message = "Votre serveur ne donne pas les listes une par une : récupération de sa liste complète…" +
+                    if (attempt > 1) " (essai $attempt/$ATTEMPTS)" else "",
+            )
+            try {
+                val c = api.importM3u { n ->
+                    _state.value = _state.value.copy(message = "Liste complète du serveur : ${n / 1048576} Mo reçus…")
+                }
+                _state.value = _state.value.copy(
+                    steps = _state.value.steps.map { st ->
+                        st.copy(status = Status.DONE, bytes = api.catalogFile(st.action).length(), note = "")
+                    },
+                    message = "${c.live} chaînes, ${c.movies} films, ${c.series} séries (${c.episodes} épisodes)",
+                )
+                Log.i(TAG, "liste complète : ${c.live} chaînes, ${c.movies} films, ${c.series} séries, ${c.episodes} épisodes")
+                return true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                val why = api.explain(e)
+                Log.w(TAG, "liste complète : échec", e)
+                if (attempt >= ATTEMPTS) {
+                    _state.value = _state.value.copy(
+                        steps = _state.value.steps.map { it.copy(status = Status.FAILED, note = why) },
+                        running = false, error = "Liste complète du serveur : $why",
+                        message = "Le téléchargement s'est arrêté après $ATTEMPTS essais.",
+                    )
+                    return false
+                }
+                val wait = (attempt * 10).coerceAtMost(30)
+                _state.value = _state.value.copy(message = "Le serveur n'a pas répondu ($why), nouvel essai dans $wait s…")
+                delay(wait * 1000L)
+                attempt++
+            }
+        }
     }
 }

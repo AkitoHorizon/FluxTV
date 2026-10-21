@@ -15,7 +15,7 @@ object Play {
     fun live(ctx: Context, channels: List<Item>, index: Int) {
         if (channels.isEmpty()) return
         val api = Repo.api()
-        Repo.queue = channels.map { PlayItem(it.key, it.name, null, api.liveUrl(it.id), true, it.icon, it.num, it.id) }
+        Repo.queue = channels.map { PlayItem(it.key, it.name, null, api.liveUrl(it.id, it.direct), true, it.icon, it.num, it.id) }
         Repo.queueIndex = index.coerceIn(0, channels.size - 1)
         Repo.resume = false
         Repo.seriesId = null
@@ -23,7 +23,7 @@ object Play {
     }
 
     fun movie(ctx: Context, item: Item, resume: Boolean) {
-        Repo.queue = listOf(PlayItem(item.key, item.name, item.year, Repo.api().movieUrl(item.id, item.ext), false, item.backdrop ?: item.icon, 0, item.id))
+        Repo.queue = listOf(PlayItem(item.key, item.name, item.year, Repo.api().movieUrl(item.id, item.ext, item.direct), false, item.backdrop ?: item.icon, 0, item.id))
         Repo.queueIndex = 0
         Repo.resume = resume
         Repo.seriesId = null
@@ -35,7 +35,7 @@ object Play {
         if (eps.isEmpty()) return
         val api = Repo.api()
         Repo.queue = eps.map {
-            PlayItem(it.key, series.name, "${it.label}  « ${Fmt.episodeTitle(it)} »", api.episodeUrl(it.id, it.ext),
+            PlayItem(it.key, series.name, "${it.label}  « ${Fmt.episodeTitle(it)} »", api.episodeUrl(it.id, it.ext, it.direct),
                 false, it.image ?: series.backdrop ?: series.icon, it.num, it.id, it)
         }
         Repo.queueIndex = index.coerceIn(0, eps.size - 1)

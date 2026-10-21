@@ -8,6 +8,7 @@ import android.util.Log
 import com.flux.tv.App
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.FormBody
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONException
@@ -41,18 +42,70 @@ class XtreamApi(val server: String, user: String, pass: String) {
         "&password=${URLEncoder.encode(pass, "UTF-8")}"
     private val u = Uri.encode(user)
     private val p = Uri.encode(pass)
+    private val userRaw = user
+    private val passRaw = pass
+    private val userQ = URLEncoder.encode(user, "UTF-8")
+    private val passQ = URLEncoder.encode(pass, "UTF-8")
+    private val serverHost = Uri.parse(server).host
 
-    fun liveUrl(id: String) = "$server/live/$u/$p/$id.${Prefs.liveFormat}"
-    fun movieUrl(id: String, ext: String) = "$server/movie/$u/$p/$id.$ext"
-    fun episodeUrl(id: String, ext: String) = "$server/series/$u/$p/$id.$ext"
+    /** Adresse M3U fournie telle quelle si elle pointe ailleurs que le serveur (sinon adresse Xtream classique). */
+    private fun directOr(direct: String?, built: String) =
+        if (direct != null && Uri.parse(direct).host != serverHost) direct else built
+
+    fun liveUrl(id: String, direct: String? = null) = directOr(direct, "$server/live/$u/$p/$id.${Prefs.liveFormat}")
+    fun movieUrl(id: String, ext: String, direct: String? = null) = directOr(direct, "$server/movie/$u/$p/$id.$ext")
+    fun episodeUrl(id: String, ext: String, direct: String? = null) = directOr(direct, "$server/series/$u/$p/$id.$ext")
 
     // ------------------------------------------------------------------ réseau
 
-    private fun fetch(url: String): String =
+    private fun fetchUrl(url: String): String =
         http.newCall(Request.Builder().url(url).build()).execute().use { r ->
             if (!r.isSuccessful) throw IOException("Erreur serveur (HTTP ${r.code})")
             r.body?.string() ?: ""
         }
+
+    /**
+     * Formes de requête à player_api.php. Certains serveurs ignorent « action » dans la forme
+     * classique et renvoient seulement les infos du compte : on essaie alors les autres formes
+     * utilisées par les lecteurs IPTV, et on retient celle qui marche.
+     */
+    private fun apiRequest(mode: Int, params: String): Request {
+        val url = "$server/player_api.php"
+        return when (mode) {
+            1 -> Request.Builder().url(url).post(FormBody.Builder().apply {
+                add("username", userRaw); add("password", passRaw)
+                params.split('&').forEach { kv ->
+                    val i = kv.indexOf('=')
+                    if (i > 0) add(kv.substring(0, i), kv.substring(i + 1))
+                }
+            }.build()).build()
+            2 -> Request.Builder().url("$url?$params&username=$userQ&password=$passQ").build()
+            else -> Request.Builder().url("$base&$params").build()
+        }
+    }
+
+    private fun modeOrder(): List<Int> {
+        val m = Prefs.apiMode.coerceIn(0, 2)
+        return listOf(m) + (0..2).filter { it != m }
+    }
+
+    private fun remember(mode: Int) {
+        if (Prefs.apiMode != mode) { Prefs.apiMode = mode; Log.i(TAG, "forme de requête retenue : ${MODE_NAMES[mode]}") }
+    }
+
+    private fun fetch(params: String): String {
+        for (mode in modeOrder()) {
+            val text = http.newCall(apiRequest(mode, params)).execute().use { r ->
+                if (!r.isSuccessful) throw IOException("Erreur serveur (HTTP ${r.code})")
+                r.body?.string() ?: ""
+            }
+            if (!isAccountEcho(text.take(400))) { remember(mode); return text }
+        }
+        throw AccountEchoException()
+    }
+
+    /** Le serveur renvoie les infos du compte au lieu de la liste demandée. */
+    class AccountEchoException : IOException("le serveur ignore la demande et renvoie seulement les infos du compte")
 
     /**
      * Liste du catalogue stockée de façon permanente (dossier de l'appli, pas le cache que
@@ -80,25 +133,19 @@ class XtreamApi(val server: String, user: String, pass: String) {
         val tmp = File(f.parentFile, "$action.tmp")
         val t0 = System.currentTimeMillis()
         try {
-            syncHttp.newCall(Request.Builder().url("$base&action=$action").build()).execute().use { r ->
-                if (!r.isSuccessful) throw IOException("le serveur a répondu HTTP ${r.code}")
-                val body = r.body ?: throw IOException("réponse vide")
-                tmp.outputStream().buffered(1 shl 16).use { out ->
-                    val input = body.byteStream()
-                    val buf = ByteArray(1 shl 16)
-                    var n = 0L; var lastTick = 0L
-                    while (true) {
-                        val k = input.read(buf); if (k < 0) break
-                        out.write(buf, 0, k); n += k
-                        if (onBytes != null && n - lastTick > 256 * 1024) { lastTick = n; onBytes(n) }
-                    }
-                    onBytes?.invoke(n)
+            for (mode in modeOrder()) {
+                save(syncHttp.newCall(apiRequest(mode, "action=$action")), tmp, onBytes)
+                if (isAccountEcho(head(tmp))) {
+                    Log.w(TAG, "$action : forme « ${MODE_NAMES[mode]} » ignorée par le serveur")
+                    continue
                 }
+                checkJson(action, tmp)
+                remember(mode)
+                if (!tmp.renameTo(f)) throw IOException("écriture du catalogue impossible")
+                Log.i(TAG, "$action : ${f.length()} octets en ${System.currentTimeMillis() - t0} ms")
+                return f.length()
             }
-            checkJson(action, tmp)
-            if (!tmp.renameTo(f)) throw IOException("écriture du catalogue impossible")
-            Log.i(TAG, "$action : ${f.length()} octets en ${System.currentTimeMillis() - t0} ms")
-            return f.length()
+            throw AccountEchoException()
         } catch (e: IOException) {
             tmp.delete()
             Log.w(TAG, "$action échec après ${System.currentTimeMillis() - t0} ms", e)
@@ -106,11 +153,55 @@ class XtreamApi(val server: String, user: String, pass: String) {
         }
     }
 
+    /** Écrit la réponse dans un fichier en signalant la progression. */
+    private fun save(call: okhttp3.Call, out: File, onBytes: ((Long) -> Unit)?) {
+        call.execute().use { r ->
+            if (!r.isSuccessful) throw IOException("le serveur a répondu HTTP ${r.code}")
+            val body = r.body ?: throw IOException("réponse vide")
+            out.outputStream().buffered(1 shl 16).use { o ->
+                val input = body.byteStream()
+                val buf = ByteArray(1 shl 16)
+                var n = 0L; var lastTick = 0L
+                while (true) {
+                    val k = input.read(buf); if (k < 0) break
+                    o.write(buf, 0, k); n += k
+                    if (onBytes != null && n - lastTick > 256 * 1024) { lastTick = n; onBytes(n) }
+                }
+                onBytes?.invoke(n)
+            }
+        }
+    }
+
+    private fun head(f: File): String =
+        f.inputStream().use { i -> ByteArray(400).let { b -> String(b, 0, i.read(b).coerceAtLeast(0)) } }.trim()
+
+    // ------------------------------------------------------------------ playlist M3U (secours)
+
+    /** Playlist complète (chaînes, films, séries) au format M3U, proposée par tous les serveurs Xtream. */
+    fun m3uRequest(): Request =
+        Request.Builder().url("$server/get.php?username=$userQ&password=$passQ&type=m3u_plus&output=ts").build()
+
+    /**
+     * Construit tout le catalogue depuis la playlist M3U quand l'API ne donne pas les listes.
+     * Les fichiers produits ont le même format que ceux de l'API : le reste de l'appli ne change pas.
+     */
+    fun importM3u(onBytes: (Long) -> Unit): M3uImport.Counts {
+        val dir = catalogDir()
+        val playlist = File(dir, "playlist.m3u.tmp")
+        try {
+            save(syncHttp.newCall(m3uRequest()), playlist, onBytes)
+            return M3uImport.convert(playlist, dir)
+        } finally {
+            playlist.delete()
+        }
+    }
+
     /** Refuse une réponse qui n'est manifestement pas du JSON (page d'erreur, blocage…). */
     private fun checkJson(action: String, f: File) {
         val head = f.inputStream().use { i -> ByteArray(120).let { b -> String(b, 0, i.read(b).coerceAtLeast(0)) } }.trim()
         if (!head.startsWith("[") && !head.startsWith("{")) {
-            throw IOException("réponse illisible du serveur (début : « ${head.take(80)} »)")
+            if (head.startsWith("<")) throw IOException("le serveur a renvoyé une page web au lieu des données (début : « ${mask(head.take(80))} »)")
+            throw IOException("réponse illisible du serveur (début : « ${mask(head.take(80))} »)")
         }
     }
 
@@ -120,7 +211,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
 
     suspend fun auth(): AccountInfo = withContext(Dispatchers.IO) {
         val o = try {
-            JSONObject(fetch(base))
+            JSONObject(fetchUrl(base))
         } catch (e: JSONException) {
             throw IOException("Ce serveur ne répond pas comme un serveur Xtream Codes")
         }
@@ -172,6 +263,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
                     plot = m["plot"]?.takeIf { it.isNotBlank() },
                     backdrop = m["backdrop_path"]?.takeIf { it.startsWith("http") },
                     year = (m["releaseDate"] ?: m["release_date"] ?: m["year"])?.take(4)?.takeIf { it.isNotBlank() },
+                    direct = m["direct_source"]?.takeIf { it.startsWith("http") },
                 )
             )
         }
@@ -181,7 +273,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
     // ------------------------------------------------------------------ fiches
 
     suspend fun vodInfo(id: String): Details = withContext(Dispatchers.IO) {
-        val o = JSONObject(fetch("$base&action=get_vod_info&vod_id=$id"))
+        val o = JSONObject(fetch("action=get_vod_info&vod_id=$id"))
         val i = o.optJSONObject("info") ?: JSONObject()
         Details(
             plot = i.str("plot") ?: i.str("description"),
@@ -196,7 +288,9 @@ class XtreamApi(val server: String, user: String, pass: String) {
     }
 
     suspend fun seriesInfo(id: String): Details = withContext(Dispatchers.IO) {
-        val o = JSONObject(fetch("$base&action=get_series_info&series_id=$id"))
+        // Série reconstituée depuis la playlist M3U : épisodes lus dans le fichier local
+        if (id.startsWith(M3uImport.SERIES_PREFIX)) return@withContext M3uImport.seriesDetails(catalogDir(), id)
+        val o = JSONObject(fetch("action=get_series_info&series_id=$id"))
         val i = o.optJSONObject("info") ?: JSONObject()
         val seasons = sortedMapOf<Int, List<Episode>>()
         when (val eps = o.opt("episodes")) {
@@ -242,7 +336,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
         }.sortedBy { it.num }
 
     suspend fun shortEpg(streamId: String): List<EpgEntry> = withContext(Dispatchers.IO) {
-        val o = JSONObject(fetch("$base&action=get_short_epg&stream_id=$streamId&limit=4"))
+        val o = JSONObject(fetch("action=get_short_epg&stream_id=$streamId&limit=4"))
         val arr = o.optJSONArray("epg_listings") ?: return@withContext emptyList()
         (0 until arr.length()).mapNotNull { n ->
             val e = arr.optJSONObject(n) ?: return@mapNotNull null
@@ -320,41 +414,87 @@ class XtreamApi(val server: String, user: String, pass: String) {
 
     class Probe(val action: String, val ok: Boolean, val text: String)
 
-    /** Télécharge chaque liste sans la garder et rapporte code HTTP, taille, durée et nombre d'entrées. */
+    /** Interroge chaque liste (et la playlist M3U) sans rien garder, et décrit la réponse. */
     suspend fun probeCatalog(): List<Probe> = withContext(Dispatchers.IO) {
-        listOf("get_live_categories", "get_live_streams", "get_vod_categories", "get_vod_streams",
-            "get_series_categories", "get_series").map { a -> probe(a) }
+        ACTIONS.map { a -> probe(a) } + probeM3u()
+    }
+
+    private class Peek(val code: Int, val bytes: Long, val head: String, val redirected: String?)
+
+    private fun peek(req: Request): Peek = syncHttp.newCall(req).execute().use { r ->
+        var n = 0L; var head = ""
+        r.body?.byteStream()?.let { input ->
+            val buf = ByteArray(1 shl 16)
+            while (true) {
+                val k = input.read(buf); if (k < 0) break
+                if (n == 0L) head = String(buf, 0, minOf(k, 300))
+                n += k
+            }
+        }
+        val moved = r.priorResponse?.let { r.request.url.host.takeIf { h -> h != serverHost } ?: "même serveur" }
+        Peek(r.code, n, head.trim(), moved)
     }
 
     private fun probe(action: String): Probe {
         val t0 = System.currentTimeMillis()
         return try {
-            syncHttp.newCall(Request.Builder().url("$base&action=$action").build()).execute().use { r ->
-                val body = r.body
-                val bytes = body?.byteStream()?.let { input ->
-                    var n = 0L; var head = ""
-                    val buf = ByteArray(1 shl 16)
-                    while (true) {
-                        val k = input.read(buf); if (k < 0) break
-                        if (n == 0L) head = String(buf, 0, minOf(k, 200))
-                        n += k
-                    }
-                    n to head
-                } ?: (0L to "")
-                val ms = System.currentTimeMillis() - t0
-                val head = bytes.second.trim()
-                val kind = when {
-                    head.startsWith("[") -> "liste JSON"
-                    head.startsWith("{") -> "objet JSON (pas une liste) : « ${head.take(60)} »"
-                    head.isEmpty() -> "vide"
-                    else -> "pas du JSON : « ${head.take(60)} »"
+            var last: Peek? = null
+            for (mode in 0..2) {
+                val pk = peek(apiRequest(mode, "action=$action"))
+                last = pk
+                if (pk.code in 200..299 && pk.head.startsWith("[")) {
+                    val how = if (mode == 0) "" else " (forme « ${MODE_NAMES[mode]} »)"
+                    return Probe(action, true, "${size(pk.bytes)} · ${secs(t0)}$how" + redirectNote(pk))
                 }
-                val ok = r.isSuccessful && head.startsWith("[")
-                Probe(action, ok, "HTTP ${r.code} · ${bytes.first / 1024} Ko · ${ms / 1000.0} s · $kind")
+                if (!isAccountEcho(pk.head)) break   // autre problème : inutile d'essayer les autres formes
             }
+            val pk = last!!
+            val what = when {
+                isAccountEcho(pk.head) -> "renvoie les infos du compte au lieu de la liste (3 formes de requête essayées)"
+                pk.head.startsWith("{") -> "objet JSON au lieu d'une liste : « ${mask(pk.head.take(70))} »"
+                pk.head.isEmpty() -> "réponse vide"
+                pk.head.startsWith("<") -> "page web au lieu des données : « ${mask(pk.head.take(70))} »"
+                else -> "pas du JSON : « ${mask(pk.head.take(70))} »"
+            }
+            Probe(action, false, "HTTP ${pk.code} · ${size(pk.bytes)} · ${secs(t0)} · $what" + redirectNote(pk))
         } catch (e: IOException) {
-            Probe(action, false, "échec après ${(System.currentTimeMillis() - t0) / 1000.0} s : ${explain(e)}")
+            Probe(action, false, "échec après ${secs(t0)} : ${explain(e)}")
         }.also { Log.i(TAG, "probe $action -> ${it.text}") }
+    }
+
+    private fun probeM3u(): Probe {
+        val t0 = System.currentTimeMillis()
+        return try {
+            var entries = 0L; var n = 0L; var first = ""
+            val code = syncHttp.newCall(m3uRequest()).execute().use { r ->
+                r.body?.byteStream()?.bufferedReader()?.let { rd ->
+                    while (true) {
+                        val line = rd.readLine() ?: break
+                        if (n == 0L) first = line.trim()
+                        n += line.length + 1
+                        if (line.startsWith("#EXTINF")) entries++
+                    }
+                }
+                r.code
+            }
+            val ok = code in 200..299 && first.startsWith("#EXTM3U") && entries > 0
+            Probe("get.php", ok, "HTTP $code · ${size(n)} · ${secs(t0)} · " +
+                if (ok) "$entries entrées" else "« ${mask(first.take(70))} »")
+        } catch (e: IOException) {
+            Probe("get.php", false, "échec après ${secs(t0)} : ${explain(e)}")
+        }.also { Log.i(TAG, "probe m3u -> ${it.text}") }
+    }
+
+    private fun redirectNote(pk: Peek) = pk.redirected?.let { " · redirigé ($it)" } ?: ""
+    private fun secs(t0: Long) = String.format(java.util.Locale.FRANCE, "%.1f s", (System.currentTimeMillis() - t0) / 1000.0)
+    private fun size(b: Long) = if (b >= 1 shl 20) String.format(java.util.Locale.FRANCE, "%.1f Mo", b / 1048576.0) else "${(b + 1023) / 1024} Ko"
+
+    /** Ne jamais afficher l'identifiant ni le mot de passe IPTV à l'écran. */
+    private fun mask(t: String): String {
+        var r = t
+        if (userRaw.length >= 3) r = r.replace(userRaw, "•••")
+        if (passRaw.length >= 3) r = r.replace(passRaw, "•••")
+        return r
     }
 
     fun explain(e: IOException): String = when (e) {
@@ -367,6 +507,9 @@ class XtreamApi(val server: String, user: String, pass: String) {
 
     companion object {
         private const val TAG = "FluxAPI"
+        private val MODE_NAMES = arrayOf("GET", "POST", "GET inversé")
+
+        fun isAccountEcho(head: String) = head.trimStart().startsWith("{") && head.contains("\"user_info\"")
 
         /** Les 6 listes du catalogue, dans l'ordre de téléchargement (les plus légères d'abord). */
         val ACTIONS = listOf(
@@ -381,6 +524,7 @@ class XtreamApi(val server: String, user: String, pass: String) {
             "get_vod_streams" -> "Liste des films"
             "get_series_categories" -> "Catégories des séries"
             "get_series" -> "Liste des séries"
+            "get.php" -> "Liste complète (get.php)"
             else -> action
         }
 

@@ -81,6 +81,26 @@ def series_info(sid):
                      "director": "Réalisatrice Test", "rating": "7.5", "releaseDate": "2021-01-01", "backdrop_path": [f"{HOST}/img/backdrop/{i}.png"],
                      "episode_run_time": "45"}, "episodes": eps}
 
+ECHO = os.environ.get("MOCK_ECHO") == "1"
+
+def m3u():
+    """Liste complète get.php (type=m3u_plus), comme un serveur Xtream Codes."""
+    cat = lambda cats, cid: next(c["category_name"] for c in cats if c["category_id"] == cid)
+    out = ["#EXTM3U"]
+    for c in live:
+        out += [f'#EXTINF:-1 tvg-id="{c["epg_channel_id"]}" tvg-name="{c["name"]}" tvg-logo="{c["stream_icon"]}" group-title="{cat(live_cats, c["category_id"])}",{c["name"]}',
+                f'{HOST}/live/demo/demo/{c["stream_id"]}.ts']
+    for v in vod:
+        out += [f'#EXTINF:-1 tvg-name="{v["name"]}" tvg-logo="{v["stream_icon"]}" group-title="{cat(vod_cats, v["category_id"])}",{v["name"]}',
+                f'{HOST}/movie/demo/demo/{v["stream_id"]}.mp4']
+    for sr in series:
+        for s in range(1, 4):
+            for e in range(1, 7):
+                t = f'{sr["name"]} S{s:02d} E{e:02d}'
+                out += [f'#EXTINF:-1 tvg-name="{t}" tvg-logo="{sr["cover"]}" group-title="{cat(series_cats, sr["category_id"])}",{t}',
+                        f'{HOST}/series/demo/demo/{sr["series_id"]}{s}{e:02d}.mkv']
+    return "\n".join(out) + "\n"
+
 def vod_info(vid):
     i = vid - 1000
     return {"info": {"plot": "Un film de démonstration. Ce résumé est volontairement long pour vérifier qu'il est coupé proprement après quelques lignes sans déborder sur les rangées en dessous ni chevaucher les boutons.",
@@ -127,13 +147,32 @@ class H(BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError):
                 pass
 
+    def do_POST(self):
+        n = int(self.headers.get("Content-Length") or 0)
+        form = {k: v[0] for k, v in parse_qs(self.rfile.read(n).decode()).items()}
+        self.handle_api(urlparse(self.path).path, form)
+
     def do_GET(self):
         u = urlparse(self.path); q = {k: v[0] for k, v in parse_qs(u.query).items()}
         p = u.path
-        if p.endswith("/player_api.php"):
+        if p.endswith("/get.php"):
+            if q.get("username") != "demo" or q.get("password") != "demo": return self.send_bytes(b"", "text/plain", 401)
+            return self.send_bytes(m3u().encode(), "audio/x-mpegurl")
+        if p.endswith("/player_api.php"): return self.handle_api(p, q)
+        m = re.match(r"/img/(\w+)/(\d+)\.png", p)
+        if m: return self.send_bytes(image(m.group(1), int(m.group(2))), "image/png")
+        if p.startswith("/movie/"): return self.send_file(os.path.join(MEDIA, "test.mp4"), "video/mp4")
+        if p.startswith("/series/"): return self.send_file(os.path.join(MEDIA, "test.mkv"), "video/x-matroska")
+        if p.startswith("/live/"): return self.send_file(os.path.join(MEDIA, "test.ts"), "video/mp2t")
+        self.send_bytes(b"not found", "text/plain", 404)
+
+    def handle_api(self, p, q):
+        if True:
             if q.get("username") != "demo" or q.get("password") != "demo":
                 return self.send_bytes(json.dumps({"user_info": {"auth": 0}}).encode(), "application/json")
             a = q.get("action")
+            # Imite un vrai serveur rencontré : toute « action » est ignorée, seules les infos du compte reviennent
+            if ECHO: a = None
             data = {
                 None: {"user_info": {"auth": 1, "status": "Active", "exp_date": str(NOW + 90*86400), "active_cons": "0", "max_connections": "2"}, "server_info": {}},
                 "get_live_categories": live_cats, "get_live_streams": live,
@@ -145,12 +184,6 @@ class H(BaseHTTPRequestHandler):
             if a == "get_short_epg": data = short_epg(q.get("stream_id"))
             if data is None: data = []
             return self.send_bytes(json.dumps(data, ensure_ascii=False).encode(), "application/json")
-        m = re.match(r"/img/(\w+)/(\d+)\.png", p)
-        if m: return self.send_bytes(image(m.group(1), int(m.group(2))), "image/png")
-        if p.startswith("/movie/"): return self.send_file(os.path.join(MEDIA, "test.mp4"), "video/mp4")
-        if p.startswith("/series/"): return self.send_file(os.path.join(MEDIA, "test.mkv"), "video/x-matroska")
-        if p.startswith("/live/"): return self.send_file(os.path.join(MEDIA, "test.ts"), "video/mp2t")
-        self.send_bytes(b"not found", "text/plain", 404)
 
 if __name__ == "__main__":
     print("Mock Xtream sur :8000", flush=True)

@@ -137,7 +137,13 @@ object Repo {
         refreshJob = bg.launch {
             var changed = false
             for (action in XtreamApi.ACTIONS) {
-                try { a.download(action, null); changed = true } catch (e: IOException) {
+                try { a.download(action, null); changed = true } catch (e: XtreamApi.AccountEchoException) {
+                    // Serveur sans listes séparées : on refait le catalogue depuis sa liste complète
+                    try { a.importM3u {}; changed = true } catch (e2: IOException) {
+                        android.util.Log.w("FluxAPI", "mise à jour de fond (liste complète) échouée, on garde l'ancien catalogue", e2)
+                    }
+                    break
+                } catch (e: IOException) {
                     android.util.Log.w("FluxAPI", "mise à jour de fond $action échouée, on garde l'ancienne liste", e)
                 }
             }

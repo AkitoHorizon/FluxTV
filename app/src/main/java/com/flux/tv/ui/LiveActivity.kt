@@ -210,7 +210,7 @@ class LiveActivity : BaseActivity() {
             })
         }
         liveBadge.show(false)
-        p.setMediaItem(PlayerFactory.mediaItem(PlayItem(item.key, item.name, null, Repo.api().liveUrl(item.id), true, item.icon, item.num, item.id)))
+        p.setMediaItem(PlayerFactory.mediaItem(PlayItem(item.key, item.name, null, Repo.api().liveUrl(item.id, item.direct), true, item.icon, item.num, item.id)))
         p.prepare()
         p.play()
     }

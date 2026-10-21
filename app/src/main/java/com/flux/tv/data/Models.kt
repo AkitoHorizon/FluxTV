@@ -25,6 +25,8 @@ class Item(
     val plot: String?,
     val backdrop: String?,
     val year: String?,
+    /** Adresse de lecture fournie telle quelle par une playlist M3U (sinon construite depuis l'identifiant). */
+    val direct: String? = null,
 ) {
     val key = "${kind.prefix}:$id"
     val ratingValue: Double get() = rating?.replace(',', '.')?.toDoubleOrNull() ?: 0.0
@@ -57,6 +59,7 @@ class Episode(
     val image: String?,
     val plot: String?,
     val duration: String?,
+    val direct: String? = null,
 ) {
     val key get() = "e:$id"
     val label get() = "S$season:É$num"

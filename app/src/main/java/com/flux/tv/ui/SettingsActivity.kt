@@ -19,6 +19,7 @@ import com.flux.tv.data.DnsMode
 import com.flux.tv.data.DohProvider
 import com.flux.tv.data.FluxDns
 import com.flux.tv.data.Prefs
+import com.flux.tv.data.XtreamApi
 import com.flux.tv.data.Repo
 import kotlinx.coroutines.launch
 import java.net.Inet4Address
@@ -97,7 +98,7 @@ class SettingsActivity : BaseActivity() {
                 val res = Repo.api().probeCatalog()
                 v.text = if (res.all { it.ok }) "Tout répond" else "${res.count { !it.ok }} problème(s)"
                 val route = Uri.parse(Prefs.server).host?.let { FluxDns.routeFor(it) }?.let { "Résolu via : $it\n\n" } ?: ""
-                showMenu("Test du catalogue", route + res.joinToString("\n") { (if (it.ok) "✓ " else "✗ ") + it.action + " : " + it.text },
+                showMenu("Test du catalogue", route + res.joinToString("\n") { (if (it.ok) "✓ " else "✗ ") + XtreamApi.label(it.action) + " : " + it.text },
                     listOf("Fermer" to {}), subtitleLines = 30)
             }
         }

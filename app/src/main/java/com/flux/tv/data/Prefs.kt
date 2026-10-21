@@ -26,7 +26,9 @@ object Prefs {
     /** Écriture immédiate sur disque : le compte survit même à une coupure de courant juste après. */
     fun saveAccount(s: String, u: String, p: String) =
         sp.edit().putString("server", s).putString("user", u).putString("pass", p).commit()
-    fun clearAccount() = sp.edit().remove("server").remove("user").remove("pass").apply()
+    fun clearAccount() = sp.edit().remove("server").remove("user").remove("pass").remove("apiMode").apply()
+    /** Forme de requête à l'API qui fonctionne avec ce serveur (0 GET, 1 POST, 2 GET inversé). */
+    var apiMode: Int get() = sp.getInt("apiMode", 0); set(v) = sp.edit().putInt("apiMode", v).apply()
     /** true une fois la première synchronisation du catalogue terminée (ou passée volontairement). */
     var catalogReady: Boolean get() = sp.getBoolean("catalogReady", false); set(v) = sp.edit().putBoolean("catalogReady", v).commit().let { }
 
