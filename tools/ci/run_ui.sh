@@ -99,7 +99,7 @@ menu 7; shot ma_liste 4
 menu 8; wait_act SettingsActivity; shot parametres 3
 rep 20 12; shot parametres_bas 1.5
 # Diagnostic DNS : DNS de l'émulateur ↔ DNS externe (DoH), sur example.com
-rep 20 4; k 23; shot diagnostic_dns 10
+rep 20 5; k 23; shot diagnostic_dns 10
 adb logcat -d -s FluxDNS:* > "$OUT/fluxdns.txt"; grep -c "DoH" "$OUT/fluxdns.txt" | sed 's/^/  [dns] lignes DoH : /' >> "$S"
 k 4
 menu 0; wait_act ProfilesActivity; shot profils_changer 2

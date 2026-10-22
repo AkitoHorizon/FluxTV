@@ -41,6 +41,8 @@ object Prefs {
     var tunneling: Boolean get() = sp.getBoolean("tunneling", false); set(v) = sp.edit().putBoolean("tunneling", v).apply()
     /** 0 = petits, 1 = moyens, 2 = grands sous-titres */
     var subtitleSize: Int get() = sp.getInt("subSize", 1); set(v) = sp.edit().putInt("subSize", v).apply()
+    /** Ne garder que les chaînes, films et séries en français (par défaut). */
+    var frenchOnly: Boolean get() = sp.getBoolean("frenchOnly", true); set(v) = sp.edit().putBoolean("frenchOnly", v).apply()
     var autoplayNext: Boolean get() = sp.getBoolean("autoNext", true); set(v) = sp.edit().putBoolean("autoNext", v).apply()
 
     // ------------------------------------------------------------------ DNS

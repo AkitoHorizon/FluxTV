@@ -52,10 +52,13 @@ object Repo {
                 val c = try { a.categories(kind) } catch (e: IOException) {
                     android.util.Log.w("FluxAPI", "catégories $kind indisponibles", e); emptyList()
                 }
-                list.forEach { byKey[it.key] = it }
-                cats[kind] = c
-                items[kind] = list
-                list
+                // Réglage « Français uniquement » : moins de contenu en mémoire, écrans plus rapides
+                val (kept, keptCats) = if (Prefs.frenchOnly) FrenchFilter.apply(list, c) else list to c
+                if (kept.size != list.size) android.util.Log.i("FluxAPI", "$kind : ${kept.size}/${list.size} gardés (français)")
+                kept.forEach { byKey[it.key] = it }
+                cats[kind] = keptCats
+                items[kind] = kept
+                kept
             }
         }
     }

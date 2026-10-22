@@ -132,8 +132,12 @@ class LiveActivity : BaseActivity() {
 
     private fun selectCategory(i: Int) {
         if (i !in cats.indices) return
+        val previous = selectedCat
         selectedCat = i
-        catAdapter.notifyDataSetChanged()
+        // Seules les deux lignes concernées sont redessinées : redessiner toute la liste
+        // faisait perdre le focus, qui retombait sur « Favoris »
+        if (previous in cats.indices) catAdapter.notifyItemChanged(previous)
+        catAdapter.notifyItemChanged(i)
         current = when (val id = cats[i].id) {
             RECENT -> Prefs.recentChannels().mapNotNull { Repo.find(it) }
             FAV -> Prefs.favorites().let { f -> all.filter { it.key in f } }

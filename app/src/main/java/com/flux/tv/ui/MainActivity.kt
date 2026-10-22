@@ -17,6 +17,7 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.flux.tv.R
 import com.flux.tv.data.CardStyle
@@ -274,12 +275,33 @@ class MainActivity : BaseActivity(), CardListener {
             when (event.keyCode) {
                 KeyEvent.KEYCODE_DPAD_LEFT -> if (f != null && (isFirstCard(f) || f === btnPlay || isInside(f, emptyBox))) { focusNav(); return true }
                 KeyEvent.KEYCODE_DPAD_RIGHT -> if (f != null && isInside(f, nav)) { focusContent(); return true }
-                KeyEvent.KEYCODE_DPAD_UP -> if (f != null && featured.isNotEmpty() && rowIndexOf(f) == 0) { enterBillboard(focus = true); return true }
+                KeyEvent.KEYCODE_DPAD_UP -> if (f != null) {
+                    val r = rowIndexOf(f)
+                    if (r == 0 && featured.isNotEmpty()) { enterBillboard(focus = true); return true }
+                    // La rangée du dessus est sortie de l'écran : sans ça, Android ne la trouve pas et file au menu
+                    if (r > 0) { focusRow(r - 1, screenX(f)); return true }
+                }
                 KeyEvent.KEYCODE_DPAD_DOWN -> if (f === btnPlay || f === btnInfo) { focusFirstCard(); return true }
                 KeyEvent.KEYCODE_MENU -> cardOf(f)?.let { (item, row) -> onCardLongPressed(item, row); return true }
             }
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun screenX(v: View): Int = IntArray(2).also { v.getLocationOnScreen(it) }[0]
+
+    /** Met le focus sur la carte de la rangée [index] la plus proche horizontalement de [x]. */
+    private fun focusRow(index: Int, x: Int, attempt: Int = 0) {
+        val list = rowsView.findViewHolderForAdapterPosition(index)?.itemView?.findViewById<RecyclerView>(R.id.rowList)
+        if (list == null || list.childCount == 0) {
+            if (attempt == 0) (rowsView.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(index, rowsView.paddingTop)
+            if (attempt < 20) rowsView.postDelayed({ focusRow(index, x, attempt + 1) }, 30)
+            return
+        }
+        (0 until list.childCount).map { list.getChildAt(it) }
+            .filter { it.isFocusable }
+            .minByOrNull { kotlin.math.abs(screenX(it) - x) }
+            ?.requestFocus()
     }
 
     private fun isInside(v: View, container: View): Boolean {
