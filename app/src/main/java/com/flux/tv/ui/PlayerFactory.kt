@@ -12,6 +12,8 @@ import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.LoadControl
+import androidx.media3.exoplayer.upstream.DefaultAllocator
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -35,11 +37,7 @@ object PlayerFactory {
             Prefs.bufferProfile == 2 -> intArrayOf(30_000, 90_000, 3_000, 6_000, 64 shl 20)
             else -> intArrayOf(15_000, 50_000, 1_500, 3_000, 40 shl 20)
         }
-        val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(minMs, maxMs, startMs, rebufferMs)
-            .setTargetBufferBytes(bytes)
-            .setPrioritizeTimeOverSizeThresholds(false)
-            .build()
+        val loadControl = OneStreamLoadControl(minMs, maxMs, startMs, rebufferMs, bytes)
 
         val renderers = DefaultRenderersFactory(ctx)
             .setEnableDecoderFallback(true)
@@ -76,6 +74,26 @@ object PlayerFactory {
             .setSeekBackIncrementMs(10_000)
             .setSeekForwardIncrementMs(10_000)
             .build()
+    }
+
+    /**
+     * Mémoire tampon classique, mais qui n'ouvre jamais l'élément suivant de la liste de lecture
+     * (épisode suivant) tant que l'actuel est en cours. Sinon le serveur IPTV voit deux flux en
+     * même temps et refuse le second sur un abonnement à 1 écran (erreur HTTP au changement d'épisode).
+     * L'épisode suivant se charge dès qu'il commence : quelques secondes de chargement à la place.
+     */
+    private class OneStreamLoadControl(minMs: Int, maxMs: Int, startMs: Int, rebufferMs: Int, bytes: Int) :
+        DefaultLoadControl(
+            DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE),
+            minMs, maxMs, startMs, rebufferMs, bytes,
+            false,   // priorité à la taille mémoire (petit boîtier)
+            0, false,
+        ) {
+        override fun shouldContinueLoading(parameters: LoadControl.Parameters): Boolean {
+            // Position négative = cet élément n'a pas encore commencé (préchargement du suivant)
+            if (parameters.playbackPositionUs < 0) return false
+            return super.shouldContinueLoading(parameters)
+        }
     }
 
     fun mediaItem(p: PlayItem): MediaItem = MediaItem.Builder()
