@@ -33,6 +33,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
@@ -312,18 +313,44 @@ class PlayerActivity : BaseActivity() {
         }
     }
 
+    /** Code HTTP renvoyé par le serveur de flux, s'il est à l'origine de l'erreur. */
+    private fun httpCode(error: PlaybackException?): Int? =
+        generateSequence(error?.cause) { it.cause }.take(8)
+            .filterIsInstance<HttpDataSource.InvalidResponseCodeException>().firstOrNull()?.responseCode
+
+    /**
+     * Le serveur refuse la reprise : en IPTV, c'est presque toujours la connexion coupée qui
+     * compte encore comme « écran utilisé » pendant 30 s à 1 min (abonnement 1 écran), ou un
+     * serveur saturé. Réessayer tout de suite est alors refusé à chaque fois : on patiente.
+     */
+    private fun isServerRefusal(code: Int?) = code != null && (code in 401..403 || code == 429 || code == 458 || code >= 500)
+
     private fun retry(error: PlaybackException?) {
         handler.removeCallbacks(retryRunnable)
+        val code = httpCode(error)
+        if (code != null) Log.w("FluxQA", "player HTTP $code (essai $retries)")
         if (retries >= MAX_RETRIES) {
             failed = true
             spinner.show(false)
-            showStatus("Lecture impossible",
-                (error?.errorCodeName?.let { "$it\n\n" } ?: "") + "OK pour réessayer  ·  Retour pour quitter")
+            showStatus("Lecture impossible", explainFailure(error, code) + "\n\nOK pour réessayer  ·  Retour pour quitter")
             return
         }
         retries++
-        showStatus("Reconnexion…", "Tentative $retries sur $MAX_RETRIES")
-        handler.postDelayed(retryRunnable, 700L * retries)
+        // Refus du serveur : 5 s, 10 s, 15 s, 20 s, 30 s, 30 s (≈ 2 min au total) ; sinon reprise rapide
+        val delayMs = if (isServerRefusal(code)) longArrayOf(5, 10, 15, 20, 30, 30)[retries - 1] * 1000 else 700L * retries
+        val why = code?.let { "Le serveur a répondu HTTP $it · " } ?: ""
+        showStatus("Reconnexion…", "${why}tentative $retries sur $MAX_RETRIES dans ${(delayMs + 999) / 1000} s")
+        handler.postDelayed(retryRunnable, delayMs)
+    }
+
+    private fun explainFailure(error: PlaybackException?, code: Int?): String = when {
+        code == 401 || code == 403 || code == 458 -> "Le serveur refuse le flux (HTTP $code). Le plus souvent : nombre d'écrans " +
+            "de l'abonnement atteint (autre appareil, ou ancienne connexion pas encore libérée). Patientez une minute puis réessayez."
+        code == 404 || code == 410 -> "Ce contenu n'est plus disponible sur le serveur (HTTP $code)."
+        code == 429 || code == 509 -> "Le serveur limite les connexions (HTTP $code). Patientez une minute puis réessayez."
+        code != null && code >= 500 -> "Le serveur de votre fournisseur est en difficulté (HTTP $code). Réessayez dans quelques minutes."
+        code != null -> "Le serveur a répondu HTTP $code."
+        else -> error?.errorCodeName ?: "Erreur de lecture."
     }
 
     private fun showStatus(title: String, text: String) {
