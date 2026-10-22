@@ -155,6 +155,7 @@ class LiveActivity : BaseActivity() {
     }
 
     private fun focusChannel(pos: Int, attempt: Int = 0, done: (() -> Unit)? = null) {
+        if (isFinishing || isDestroyed) return   // écran déjà fermé (retour rapide, rotation…)
         val v = chList.findViewHolderForAdapterPosition(pos)?.itemView
         if (v != null) { v.requestFocus(); done?.invoke() }
         else if (attempt < 30) chList.postDelayed({ focusChannel(pos, attempt + 1, done) }, 50)

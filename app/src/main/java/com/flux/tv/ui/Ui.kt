@@ -124,7 +124,18 @@ object Img {
         .format(DecodeFormat.PREFER_RGB_565)          // moitié moins de RAM
         .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
 
+    /** Glide refuse (et fait planter l'appli) une image demandée pour un écran déjà fermé. */
+    private fun alive(iv: ImageView): Boolean {
+        var c = iv.context
+        while (c is android.content.ContextWrapper) {
+            if (c is android.app.Activity) return !c.isFinishing && !c.isDestroyed
+            c = c.baseContext
+        }
+        return true
+    }
+
     fun card(iv: ImageView, url: String?, w: Int, h: Int) {
+        if (!alive(iv)) return
         val g = Glide.with(iv)
         if (url == null) { g.clear(iv); iv.setImageDrawable(null); return }
         g.load(url).apply(opts).override(w, h)
@@ -134,6 +145,7 @@ object Img {
 
     /** Grand visuel : fondu enchaîné + lent zoom "Ken Burns". */
     fun hero(iv: ImageView, url: String?, isPoster: Boolean) {
+        if (!alive(iv)) return
         val g = Glide.with(iv)
         if (url == null) { g.clear(iv); iv.setImageDrawable(null); return }
         iv.scaleType = if (isPoster) ImageView.ScaleType.FIT_END else ImageView.ScaleType.CENTER_CROP

@@ -22,7 +22,7 @@ jobs:
             target: android-tv
             profile: tv_1080p
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
