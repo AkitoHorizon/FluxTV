@@ -1,0 +1,12 @@
+--------- beginning of main
+--------- beginning of system
+10-23 07:50:32.803  4249 11384 W FluxDNS : DoH Cloudflare example.com échec en 101 ms : échec TLS avec le résolveur (certificat refusé ou connexion interceptée)
+10-23 07:50:32.831  4249 11383 I FluxDNS : DoH Quad9 example.com -> 2606:4700:10::ac42:93f3, 2606:4700:10::6814:179a, 104.20.23.154, 172.66.147.243 (131 ms)
+10-23 07:50:32.872  4249  4340 I FluxDNS : DoH Google example.com -> 172.66.147.243, 104.20.23.154, 2606:4700:10::ac42:93f3, 2606:4700:10::6814:179a (172 ms)
+10-23 07:50:32.873  4249  4340 I FluxDNS : diagnostic
+10-23 07:50:32.873  4249  4340 I FluxDNS : example.com
+10-23 07:50:32.873  4249  4340 I FluxDNS : DNS box : 104.20.23.154, 172.66.147.243, 2606:4700:10::ac42:93f3, 2606:4700:10::6814:179a · 44 ms
+10-23 07:50:32.873  4249  4340 I FluxDNS : DNS externe Quad9 : 2606:4700:10::ac42:93f3, 2606:4700:10::6814:179a, 104.20.23.154, 172.66.147.243 · 131 ms
+10-23 07:50:32.873  4249  4340 I FluxDNS : DNS externe Cloudflare : échec, échec TLS avec le résolveur (certificat refusé ou connexion interceptée) · 101 ms
+10-23 07:50:32.873  4249  4340 I FluxDNS : DNS externe Google : 172.66.147.243, 104.20.23.154, 2606:4700:10::ac42:93f3, 2606:4700:10::6814:179a · 172 ms
+10-23 07:50:32.873  4249  4340 I FluxDNS : → Réponses concordantes : la box ne modifie pas ce nom.

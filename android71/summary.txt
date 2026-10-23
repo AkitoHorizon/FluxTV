@@ -1,0 +1,44 @@
+== android71 : Android 7.1.1 / Physical size: 1920x1080 / Physical density: 320
+Success
+ATTENTE ECHOUEE: CalibrationActivity (actuel:     mResumedActivity: ActivityRecord{4cd79bb u0 com.flux.tv/.ui.SyncActivity t6})
+ATTENTE ECHOUEE: ProfilesActivity (actuel:     mResumedActivity: ActivityRecord{4cd79bb u0 com.flux.tv/.ui.SyncActivity t6})
+ATTENTE ECHOUEE: MainActivity (actuel:     mResumedActivity: ActivityRecord{321b0a1 u0 com.flux.tv/.ui.CalibrationActivity t6})
+ATTENTE ECHOUEE: MainActivity (actuel:     mResumedActivity: ActivityRecord{60115c8 u0 com.flux.tv/.ui.ProfilesActivity t6})
+ATTENTE ECHOUEE: MainActivity (actuel:     mResumedActivity: ActivityRecord{7d3305b u0 com.flux.tv/.ui.ProfilesActivity t6})
+ATTENTE ECHOUEE: MainActivity (actuel:     mResumedActivity: ActivityRecord{2b19c27 u0 com.flux.tv/.ui.ProfilesActivity t6})
+ATTENTE ECHOUEE: MainActivity (actuel:     mResumedActivity: ActivityRecord{6815a35 u0 com.flux.tv/.ui.ProfilesActivity t6})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{6815a35 u0 com.flux.tv/.ui.ProfilesActivity t6})
+ATTENTE ECHOUEE: PlayerActivity (actuel:     mResumedActivity: ActivityRecord{d80e597 u0 com.flux.tv/.ui.MainActivity t6})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{d80e597 u0 com.flux.tv/.ui.MainActivity t6})
+ATTENTE ECHOUEE: PlayerActivity (actuel:     mResumedActivity: ActivityRecord{578134f u0 com.flux.tv/.ui.DetailActivity t6})
+  [serie] 4 premieres images, 0 erreurs lecteur
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{d80e597 u0 com.flux.tv/.ui.MainActivity t6})
+  [direct] 6 premieres images, 0 erreurs lecteur
+ATTENTE ECHOUEE: LiveActivity (actuel:     mResumedActivity: ActivityRecord{d80e597 u0 com.flux.tv/.ui.MainActivity t6})
+  [dns] lignes DoH : 3
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{5ee42b u0 com.flux.tv/.ui.PlayerActivity t7})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{bf4c388 u0 com.flux.tv/.ui.PlayerActivity t8})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{538ca59 u0 com.flux.tv/.ui.PlayerActivity t9})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{8b5ddf7 u0 com.flux.tv/.ui.PlayerActivity t10})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{5b29991 u0 com.flux.tv/.ui.PlayerActivity t11})
+--- Traces FluxQA ---
+10-23 07:54:17.304 13706 13706 I FluxQA  : preview firstFrame
+10-23 07:54:31.021 15311 15311 I FluxQA  : section=HOME rows=11 featured=5
+10-23 07:54:59.748 15311 15311 I FluxQA  : section=MOVIES rows=6 featured=5
+10-23 07:55:05.827 15311 15311 I FluxQA  : player state=2 live=false item=m:1004
+10-23 07:55:07.793 15311 15311 I FluxQA  : player firstFrame live=false
+10-23 07:55:07.794 15311 15311 I FluxQA  : player state=3 live=false item=m:1004
+10-23 07:55:52.045 15311 15311 I FluxQA  : preview firstFrame
+10-23 07:56:05.953 16925 16925 I FluxQA  : section=HOME rows=11 featured=5
+10-23 07:56:34.691 16925 16925 I FluxQA  : section=MOVIES rows=6 featured=5
+10-23 07:56:40.725 16925 16925 I FluxQA  : player state=2 live=false item=m:1004
+10-23 07:56:41.959 16925 16925 I FluxQA  : player firstFrame live=false
+10-23 07:56:41.960 16925 16925 I FluxQA  : player state=3 live=false item=m:1004
+10-23 07:57:26.702 16925 16925 I FluxQA  : preview firstFrame
+10-23 07:57:41.823 18550 18550 I FluxQA  : section=HOME rows=11 featured=5
+10-23 07:58:16.137 18550 18550 I FluxQA  : section=MOVIES rows=6 featured=5
+10-23 07:58:23.072 18550 18550 I FluxQA  : player state=2 live=false item=m:1004
+10-23 07:58:24.070 18550 18550 I FluxQA  : player state=3 live=false item=m:1004
+10-23 07:58:24.517 18550 18550 I FluxQA  : player firstFrame live=false
+10-23 07:59:14.332 18550 18550 I FluxQA  : preview firstFrame
+Plantages Flux TV: 0
