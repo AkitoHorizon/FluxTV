@@ -1,0 +1,44 @@
+== androidtv9 : Android 9 / Physical size: 1920x1080 / Physical density: 320
+Success
+  [serie] 3 premieres images, 0 erreurs lecteur
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{7407eb2 u0 com.flux.tv/.ui.MainActivity t5})
+  [direct] 32 premieres images, 0 erreurs lecteur
+ATTENTE ECHOUEE: LiveActivity (actuel:     mResumedActivity: ActivityRecord{7407eb2 u0 com.flux.tv/.ui.MainActivity t5})
+  [dns] lignes DoH : 3
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{cb42d7c u0 com.flux.tv/.ui.PlayerActivity t6})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{a746bca u0 com.flux.tv/.ui.PlayerActivity t7})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{d142818 u0 com.flux.tv/.ui.PlayerActivity t8})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{8bd6f4a u0 com.flux.tv/.ui.PlayerActivity t9})
+ATTENTE ECHOUEE: DetailActivity (actuel:     mResumedActivity: ActivityRecord{367d6d1 u0 com.flux.tv/.ui.PlayerActivity t10})
+--- Traces FluxQA ---
+10-23 07:49:01.207 12950 12950 I FluxQA  : section=MOVIES rows=7 featured=5
+10-23 07:49:08.234 12950 12950 I FluxQA  : player state=2 live=false item=m:1027
+10-23 07:49:10.828 12950 12950 I FluxQA  : player firstFrame live=false
+10-23 07:49:10.828 12950 12950 I FluxQA  : player state=3 live=false item=m:1027
+10-23 07:50:00.691 12950 12950 I FluxQA  : preview firstFrame
+10-23 07:50:14.523 14762 14762 I FluxQA  : section=HOME rows=11 featured=5
+10-23 07:50:53.974 14762 14762 I FluxQA  : section=MOVIES rows=7 featured=5
+10-23 07:51:00.751 14762 14762 I FluxQA  : player state=2 live=false item=m:1027
+10-23 07:51:02.210 14762 14762 I FluxQA  : player firstFrame live=false
+10-23 07:51:02.211 14762 14762 I FluxQA  : player state=3 live=false item=m:1027
+10-23 07:51:54.328 14762 14762 I FluxQA  : preview firstFrame
+10-23 07:52:09.201 16687 16687 I FluxQA  : section=HOME rows=11 featured=5
+10-23 07:52:46.571 16687 16687 I FluxQA  : section=MOVIES rows=7 featured=5
+10-23 07:52:53.212 16687 16687 I FluxQA  : player state=2 live=false item=m:1027
+10-23 07:52:56.084 16687 16687 I FluxQA  : player firstFrame live=false
+10-23 07:52:56.127 16687 16687 I FluxQA  : player state=3 live=false item=m:1027
+10-23 07:53:52.411 16687 16687 I FluxQA  : preview firstFrame
+10-23 07:54:07.634 18730 18730 I FluxQA  : section=HOME rows=11 featured=5
+10-23 07:54:44.848 18730 18730 I FluxQA  : section=MOVIES rows=7 featured=5
+10-23 07:54:51.312 18730 18730 I FluxQA  : player state=2 live=false item=m:1027
+10-23 07:54:52.097 18730 18730 I FluxQA  : player firstFrame live=false
+10-23 07:54:52.466 18730 18730 I FluxQA  : player state=3 live=false item=m:1027
+10-23 07:55:46.745 18730 18730 I FluxQA  : preview firstFrame
+10-23 07:56:04.637 20686 20686 I FluxQA  : section=HOME rows=11 featured=5
+10-23 07:56:57.057 20686 20686 I FluxQA  : section=MOVIES rows=7 featured=5
+10-23 07:57:06.219 20686 20686 I FluxQA  : player state=2 live=false item=m:1027
+10-23 07:57:08.769 20686 20686 I FluxQA  : player firstFrame live=false
+10-23 07:57:08.882 20686 20686 I FluxQA  : player state=3 live=false item=m:1027
+10-23 07:58:08.767 20686 20686 I FluxQA  : preview firstFrame
+10-23 07:58:19.982 20686 20686 I FluxQA  : preview firstFrame
+Plantages Flux TV: 0
