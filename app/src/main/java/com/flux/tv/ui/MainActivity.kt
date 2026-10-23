@@ -168,6 +168,8 @@ class MainActivity : BaseActivity(), CardListener {
         // Préchargement des catalogues pendant l'écran "Qui regarde ?"
         lifecycleScope.launch { runCatching { Repo.load(Kind.MOVIE) } }
         lifecycleScope.launch { runCatching { Repo.load(Kind.SERIES) } }
+        // Index de recherche préparé en fond : la recherche s'ouvre instantanément
+        lifecycleScope.launch { runCatching { Repo.searchIndex() } }
     }
 
     override fun onResume() {
@@ -370,8 +372,10 @@ class MainActivity : BaseActivity(), CardListener {
     private fun pickLanguage() {
         val kinds = langKinds().ifEmpty { return }
         fun set(on: Boolean) {
-            kinds.forEach { Repo.setFrenchOnly(it, on) }
-            show(section, focusContent = true)
+            lifecycleScope.launch {
+                kinds.forEach { Repo.setFrenchOnly(it, on) }
+                show(section, focusContent = true)
+            }
         }
         showMenu("Langue · ${section.label}", "La recherche trouve toujours tout, quelle que soit la langue.", listOf(
             "Français uniquement (VF)" to { set(true) },

@@ -74,8 +74,8 @@ class LiveActivity : BaseActivity() {
         updateLangLabel()
         langFilter.setOnClickListener {
             showMenu("Langue des chaînes", "La recherche trouve toujours toutes les chaînes.", listOf(
-                "Français uniquement" to { Repo.setFrenchOnly(Kind.LIVE, true); updateLangLabel(); load() },
-                "Toutes les langues" to { Repo.setFrenchOnly(Kind.LIVE, false); updateLangLabel(); load() },
+                "Français uniquement" to { setLang(true) },
+                "Toutes les langues" to { setLang(false) },
             ))
         }
         chList = findViewById(R.id.channels)
@@ -137,6 +137,10 @@ class LiveActivity : BaseActivity() {
                 loading.show(false)
             }
         }
+    }
+
+    private fun setLang(on: Boolean) {
+        lifecycleScope.launch { Repo.setFrenchOnly(Kind.LIVE, on); updateLangLabel(); load() }
     }
 
     private fun updateLangLabel() {

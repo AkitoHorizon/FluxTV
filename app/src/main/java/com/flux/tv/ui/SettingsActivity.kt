@@ -66,8 +66,10 @@ class SettingsActivity : BaseActivity() {
         }
         row(R.drawable.ic_live, "Langue du contenu (tous les onglets)", langLabel()) { v ->
             val on = !Kind.values().all { Prefs.frenchOnly(it) }
-            Kind.values().forEach { Repo.setFrenchOnly(it, on) }
-            v.text = langLabel()
+            lifecycleScope.launch {
+                Kind.values().forEach { Repo.setFrenchOnly(it, on) }
+                v.text = langLabel()
+            }
         }
         row(R.drawable.ic_settings, "Calibrer l'écran", "Ajuster les bords à votre téléviseur") {
             startActivity(Intent(this, CalibrationActivity::class.java))

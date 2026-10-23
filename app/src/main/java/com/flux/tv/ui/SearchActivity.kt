@@ -35,7 +35,7 @@ class SearchActivity : BaseActivity(), CardListener {
     private lateinit var results: RecyclerView
     private val resultAdapter = CardAdapter(this)
     private var query = ""
-    private var index: List<Triple<Item, String, Kind>> = emptyList()
+    private var index: List<Pair<Item, String>> = emptyList()
     private var job: Job? = null
     private val accents = Regex("\\p{Mn}+")
 
@@ -71,15 +71,13 @@ class SearchActivity : BaseActivity(), CardListener {
 
         status.text = "Préparation…"
         lifecycleScope.launch {
-            val loaded = listOf(Kind.MOVIE, Kind.SERIES, Kind.LIVE)
-                .map { k -> async { runCatching { Repo.loadAll(k) }.getOrDefault(emptyList()) } }.awaitAll()   // toutes langues
-            index = withContext(Dispatchers.Default) { loaded.flatten().map { Triple(it, norm(it.name), it.kind) } }
+            index = runCatching { Repo.searchIndex() }.getOrDefault(emptyList())   // toutes langues, préparé une fois
             search()
         }
         kb.post { kb.getChildAt(0)?.requestFocus() }
     }
 
-    private fun norm(s: String) = accents.replace(Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD), "")
+    private fun norm(s: String) = Repo.normalize(s)
 
     private fun type(k: String) {
         query = when (k) {
@@ -112,7 +110,7 @@ class SearchActivity : BaseActivity(), CardListener {
                     (Repo.top10(Kind.MOVIE) + Repo.top10(Kind.SERIES) + Repo.latest(Kind.MOVIE, 20) + Repo.latest(Kind.SERIES, 20)).distinctBy { it.key }
                 } else {
                     val starts = ArrayList<Item>(); val words = ArrayList<Item>(); val inside = ArrayList<Item>()
-                    for ((item, name, _) in index) {
+                    for ((item, name) in index) {
                         when {
                             name.startsWith(q) -> starts += item
                             name.contains(" $q") -> words += item

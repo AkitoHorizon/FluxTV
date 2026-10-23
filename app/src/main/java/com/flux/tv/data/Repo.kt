@@ -51,11 +51,29 @@ object Repo {
     /** Comme [load], mais renvoie tout le contenu, sans le filtre de langue (recherche). */
     suspend fun loadAll(kind: Kind): List<Item> { load(kind); return all(kind) }
 
-    /** Change le filtre de langue d'un onglet : la vue est recalculée, rien n'est retéléchargé. */
-    fun setFrenchOnly(kind: Kind, on: Boolean) {
+    /**
+     * Change le filtre de langue d'un onglet : la vue est recalculée en arrière-plan
+     * (des dizaines de milliers de titres), rien n'est retéléchargé.
+     */
+    suspend fun setFrenchOnly(kind: Kind, on: Boolean) {
         Prefs.setFrenchOnly(kind, on)
-        applyFilter(kind)
+        withContext(Dispatchers.Default) { applyFilter(kind) }
         generation++
+    }
+
+    // ------------------------------------------------------------------ recherche
+
+    private val accents = Regex("\\p{Mn}+")
+    fun normalize(s: String): String =
+        accents.replace(java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD), "")
+
+    @Volatile private var searchIndex: List<Pair<Item, String>>? = null
+
+    /** Index de recherche (tous les titres, toutes langues), construit une seule fois. */
+    suspend fun searchIndex(): List<Pair<Item, String>> {
+        searchIndex?.let { return it }
+        val all = Kind.values().flatMap { k -> try { loadAll(k) } catch (e: IOException) { emptyList() } }
+        return withContext(Dispatchers.Default) { all.map { it to normalize(it.name) } }.also { searchIndex = it }
     }
 
     private fun applyFilter(kind: Kind) {
@@ -71,19 +89,45 @@ object Repo {
     suspend fun load(kind: Kind): List<Item> {
         items[kind]?.let { return it }
         return locks.getValue(kind).withLock {
-            items[kind] ?: run {
-                val a = api()
-                val list = a.items(kind)
-                // Sans catégories, le contenu reste affiché (rangée « Tous les … »)
-                val c = try { a.categories(kind) } catch (e: IOException) {
-                    android.util.Log.w("FluxAPI", "catégories $kind indisponibles", e); emptyList()
-                }
+            items[kind] ?: withContext(Dispatchers.IO) {
+                // Copie compacte si elle est à jour, sinon analyse des listes du serveur (une fois)
+                val (list, c) = CatalogStore.read(kind) ?: parseAndStore(kind)
                 list.forEach { byKey[it.key] = it }
                 allCats[kind] = c
                 allItems[kind] = list
-                applyFilter(kind)
+                applyFilter(kind)   // hors du fil de l'interface
                 items.getValue(kind)
             }
+        }
+    }
+
+    private suspend fun parseAndStore(kind: Kind): Pair<List<Item>, List<Category>> {
+        val a = api()
+        val raw = a.items(kind)
+        // Sans catégories, le contenu reste affiché (rangée « Tous les … »)
+        val c = try { a.categories(kind) } catch (e: IOException) {
+            android.util.Log.w("FluxAPI", "catégories $kind indisponibles", e); emptyList()
+        }
+        val list = compact(kind, raw, a)
+        CatalogStore.write(kind, list, c)
+        return list to c
+    }
+
+    /**
+     * Version allégée en mémoire : textes répétés partagés (catégories, extensions, notes, années),
+     * résumés gardés seulement pour les séries (affichés sur l'accueil, les autres viennent de la fiche),
+     * adresse de lecture gardée seulement si elle pointe vers un autre serveur.
+     */
+    private fun compact(kind: Kind, raw: List<Item>, a: XtreamApi): List<Item> {
+        val pool = HashMap<String, String>()
+        fun p(s: String) = pool.getOrPut(s) { s }
+        return raw.map {
+            Item(
+                kind = kind, id = it.id, name = it.name, icon = it.icon,
+                categoryId = p(it.categoryId), ext = p(it.ext), num = it.num, rating = it.rating?.let(::p),
+                added = it.added, plot = if (kind == Kind.SERIES) it.plot else null, backdrop = it.backdrop,
+                year = it.year?.let(::p), direct = a.keepDirect(it.direct),
+            )
         }
     }
 
@@ -141,6 +185,7 @@ object Repo {
 
     /** Vide seulement la mémoire : les écrans se rechargent depuis les fichiers déjà téléchargés. */
     fun dropMemory() {
+        searchIndex = null
         items.clear(); cats.clear(); allItems.clear(); allCats.clear(); byKey.clear(); details.evictAll(); top10.clear()
         generation++
     }

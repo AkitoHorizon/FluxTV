@@ -87,6 +87,9 @@ class XtreamApi(val server: String, user: String, pass: String) {
     private fun directOr(direct: String?, built: String) =
         if (direct != null && Uri.parse(direct).host != serverHost) direct else built
 
+    /** Adresse de lecture à conserver pour un titre (inutile si elle pointe vers le serveur habituel). */
+    fun keepDirect(direct: String?): String? = direct?.takeIf { Uri.parse(it).host != serverHost }
+
     fun liveUrl(id: String, direct: String? = null) = directOr(direct, "$server/live/$u/$p/$id.${Prefs.liveFormat}")
     fun movieUrl(id: String, ext: String, direct: String? = null) = directOr(direct, "$server/movie/$u/$p/$id.$ext")
     fun episodeUrl(id: String, ext: String, direct: String? = null) = directOr(direct, "$server/series/$u/$p/$id.$ext")
