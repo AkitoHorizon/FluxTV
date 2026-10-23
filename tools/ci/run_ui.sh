@@ -19,8 +19,8 @@ check() {
   fi
 }
 resumed() { adb shell dumpsys activity activities | grep -m1 -E "mResumedActivity|ResumedActivity:" ; }
-wait_act() {  # attend qu'un écran donné soit au premier plan
-  for _ in $(seq 1 40); do resumed | grep -q "$1" && { sleep 1; return 0; }; sleep 0.5; done
+wait_act() {  # attend qu'un écran donné soit au premier plan (2e argument : nombre d'essais de 0,5 s)
+  for _ in $(seq 1 "${2:-40}"); do resumed | grep -q "$1" && { sleep 1; return 0; }; sleep 0.5; done
   echo "ATTENTE ECHOUEE: $1 (actuel: $(resumed))" | tee -a "$S"; return 1
 }
 qa() { echo "  [$1] $(adb logcat -d -s FluxQA:* | grep -c 'firstFrame') premieres images, $(adb logcat -d -s FluxQA:* | grep -c 'player error') erreurs lecteur" >> "$S"; }
@@ -42,6 +42,8 @@ shot login 1
 adb shell "input text 'http://10.0.2.2:8000/get.php?username=demo&password=demo&type=m3u'"
 shot login_lien_m3u 1
 k 66
+# Chargement du catalogue puis calibrage de l'écran (une seule fois)
+wait_act CalibrationActivity 240 && shot calibrage 1.5 && k 21 21 && shot calibrage_regle 1 && k 23
 wait_act ProfilesActivity && shot profils 4
 
 # ---- 2. Accueil
@@ -99,7 +101,7 @@ menu 7; shot ma_liste 4
 menu 8; wait_act SettingsActivity; shot parametres 3
 rep 20 12; shot parametres_bas 1.5
 # Diagnostic DNS : DNS de l'émulateur ↔ DNS externe (DoH), sur example.com
-rep 20 5; k 23; shot diagnostic_dns 10
+rep 20 6; k 23; shot diagnostic_dns 10
 adb logcat -d -s FluxDNS:* > "$OUT/fluxdns.txt"; grep -c "DoH" "$OUT/fluxdns.txt" | sed 's/^/  [dns] lignes DoH : /' >> "$S"
 k 4
 menu 0; wait_act ProfilesActivity; shot profils_changer 2

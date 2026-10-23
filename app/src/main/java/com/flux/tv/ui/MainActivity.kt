@@ -55,6 +55,7 @@ class MainActivity : BaseActivity(), CardListener {
     }
 
     private lateinit var root: View
+    private lateinit var btnLang: View
     private lateinit var heroImage: ImageView
     private lateinit var heroInfo: View
     private lateinit var heroKicker: TextView
@@ -146,6 +147,8 @@ class MainActivity : BaseActivity(), CardListener {
         buildNav()
         btnPlay.setOnClickListener { featured.getOrNull(featuredIndex)?.let { playItem(it) } }
         btnInfo.setOnClickListener { featured.getOrNull(featuredIndex)?.let { openDetails(it) } }
+        btnLang = findViewById(R.id.btnLang)
+        btnLang.setOnClickListener { pickLanguage() }
         // « Réessayer » : relit le catalogue ; une liste manquante est retéléchargée
         findViewById<View>(R.id.retry).setOnClickListener { Repo.dropMemory(); show(section, focusContent = true) }
         root.viewTreeObserver.addOnGlobalFocusChangeListener { _, now -> if (now != null) onFocusMoved(now) }
@@ -169,6 +172,12 @@ class MainActivity : BaseActivity(), CardListener {
 
     override fun onResume() {
         super.onResume()
+        // Une seule fois (première ouverture de cette version) : calibrage des bords de l'écran
+        if (!Prefs.calibrated) {
+            Prefs.calibrated = true
+            startActivity(Intent(this, CalibrationActivity::class.java))
+            return
+        }
         if (!Session.profileChosen) {
             startActivity(Intent(this, ProfilesActivity::class.java))
             return
@@ -258,7 +267,7 @@ class MainActivity : BaseActivity(), CardListener {
     private fun onFocusMoved(v: View) {
         if (isInside(v, nav)) { openNav(true); return }
         openNav(false)
-        if (v === btnPlay || v === btnInfo) {
+        if (v === btnPlay || v === btnInfo || v === btnLang) {
             lastContentFocus = v
             if (!billboard) enterBillboard(focus = false)
         } else if (isInside(v, rowsView)) {
@@ -342,8 +351,37 @@ class MainActivity : BaseActivity(), CardListener {
 
     // ================================================================== sections
 
+    /** Types de contenu concernés par le menu de langue de l'onglet affiché. */
+    private fun langKinds(): List<Kind> = when (section) {
+        Section.MOVIES -> listOf(Kind.MOVIE)
+        Section.SERIES -> listOf(Kind.SERIES)
+        Section.HOME, Section.NEW -> listOf(Kind.MOVIE, Kind.SERIES)
+        else -> emptyList()
+    }
+
+    private fun updateLangButton() {
+        val kinds = langKinds()
+        btnLang.show(kinds.isNotEmpty())
+        val fr = kinds.isNotEmpty() && kinds.all { Prefs.frenchOnly(it) }
+        findViewById<TextView>(R.id.btnLangText).text = if (fr) "Français ▾" else "Toutes langues ▾"
+    }
+
+    /** Menu déroulant : filtre de langue de l'onglet (la recherche, elle, cherche partout). */
+    private fun pickLanguage() {
+        val kinds = langKinds().ifEmpty { return }
+        fun set(on: Boolean) {
+            kinds.forEach { Repo.setFrenchOnly(it, on) }
+            show(section, focusContent = true)
+        }
+        showMenu("Langue · ${section.label}", "La recherche trouve toujours tout, quelle que soit la langue.", listOf(
+            "Français uniquement (VF)" to { set(true) },
+            "Toutes les langues" to { set(false) },
+        ))
+    }
+
     private fun show(s: Section, focusContent: Boolean) {
         section = s
+        updateLangButton()
         navViews.forEach { (k, v) -> v.isSelected = k == s }
         loadJob?.cancel(); heroJob?.cancel(); rotateJob?.cancel()
         billboard = false

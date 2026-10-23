@@ -72,7 +72,7 @@ class SearchActivity : BaseActivity(), CardListener {
         status.text = "Préparation…"
         lifecycleScope.launch {
             val loaded = listOf(Kind.MOVIE, Kind.SERIES, Kind.LIVE)
-                .map { k -> async { runCatching { Repo.load(k) }.getOrDefault(emptyList()) } }.awaitAll()
+                .map { k -> async { runCatching { Repo.loadAll(k) }.getOrDefault(emptyList()) } }.awaitAll()   // toutes langues
             index = withContext(Dispatchers.Default) { loaded.flatten().map { Triple(it, norm(it.name), it.kind) } }
             search()
         }
@@ -134,7 +134,7 @@ class SearchActivity : BaseActivity(), CardListener {
 
     override fun onCardClicked(item: Item, row: Row?) {
         if (item.kind == Kind.LIVE) {
-            val list = Repo.list(Kind.LIVE).filter { it.categoryId == item.categoryId }.ifEmpty { listOf(item) }
+            val list = Repo.all(Kind.LIVE).filter { it.categoryId == item.categoryId }.ifEmpty { listOf(item) }
             Play.live(this, list, list.indexOfFirst { it.key == item.key }.coerceAtLeast(0))
         } else startActivity(Intent(this, DetailActivity::class.java).putExtra(DetailActivity.EXTRA_KEY, item.key))
     }

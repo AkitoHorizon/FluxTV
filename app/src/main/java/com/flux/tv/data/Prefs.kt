@@ -41,8 +41,16 @@ object Prefs {
     var tunneling: Boolean get() = sp.getBoolean("tunneling", false); set(v) = sp.edit().putBoolean("tunneling", v).apply()
     /** 0 = petits, 1 = moyens, 2 = grands sous-titres */
     var subtitleSize: Int get() = sp.getInt("subSize", 1); set(v) = sp.edit().putInt("subSize", v).apply()
-    /** Ne garder que les chaînes, films et séries en français (par défaut). */
-    var frenchOnly: Boolean get() = sp.getBoolean("frenchOnly", true); set(v) = sp.edit().putBoolean("frenchOnly", v).apply()
+    /** Filtre « Français » par onglet (chaînes, films, séries) ; activé par défaut. */
+    fun frenchOnly(kind: Kind) = sp.getBoolean("frenchOnly_${kind.prefix}", sp.getBoolean("frenchOnly", true))
+    fun setFrenchOnly(kind: Kind, on: Boolean) = sp.edit().putBoolean("frenchOnly_${kind.prefix}", on).apply()
+
+    // ------------------------------------------------------------------ calibrage de l'écran (overscan)
+    /** Marges en pour mille de la largeur / hauteur de l'écran (0 = image bord à bord). */
+    var overscanX: Int get() = sp.getInt("overscanX", 0); set(v) = sp.edit().putInt("overscanX", v).apply()
+    var overscanY: Int get() = sp.getInt("overscanY", 0); set(v) = sp.edit().putInt("overscanY", v).apply()
+    /** true une fois le calibrage proposé au premier lancement (on ne le repropose plus). */
+    var calibrated: Boolean get() = sp.getBoolean("calibrated", false); set(v) = sp.edit().putBoolean("calibrated", v).apply()
     var autoplayNext: Boolean get() = sp.getBoolean("autoNext", true); set(v) = sp.edit().putBoolean("autoNext", v).apply()
 
     // ------------------------------------------------------------------ DNS

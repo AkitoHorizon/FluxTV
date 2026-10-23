@@ -38,6 +38,7 @@ class LiveActivity : BaseActivity() {
     private class Cat(val id: String, val name: String)
 
     private lateinit var catList: RecyclerView
+    private lateinit var langFilter: TextView
     private lateinit var chList: RecyclerView
     private lateinit var previewView: PlayerView
     private lateinit var previewLogo: ImageView
@@ -69,6 +70,14 @@ class LiveActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live)
         catList = findViewById(R.id.categories)
+        langFilter = findViewById(R.id.langFilter)
+        updateLangLabel()
+        langFilter.setOnClickListener {
+            showMenu("Langue des chaînes", "La recherche trouve toujours toutes les chaînes.", listOf(
+                "Français uniquement" to { Repo.setFrenchOnly(Kind.LIVE, true); updateLangLabel(); load() },
+                "Toutes les langues" to { Repo.setFrenchOnly(Kind.LIVE, false); updateLangLabel(); load() },
+            ))
+        }
         chList = findViewById(R.id.channels)
         previewView = findViewById(R.id.preview)
         previewLogo = findViewById(R.id.previewLogo)
@@ -128,6 +137,10 @@ class LiveActivity : BaseActivity() {
                 loading.show(false)
             }
         }
+    }
+
+    private fun updateLangLabel() {
+        langFilter.text = if (Prefs.frenchOnly(Kind.LIVE)) "Langue : Français ▾" else "Langue : toutes ▾"
     }
 
     private fun selectCategory(i: Int) {

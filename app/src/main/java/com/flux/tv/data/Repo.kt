@@ -18,6 +18,9 @@ import java.util.concurrent.ConcurrentHashMap
 object Repo {
     private var api: XtreamApi? = null
     private val locks = Kind.values().associateWith { Mutex() }
+    // Tout le catalogue reste en mémoire (la recherche y puise) ; les écrans affichent la vue filtrée
+    private val allCats = ConcurrentHashMap<Kind, List<Category>>()
+    private val allItems = ConcurrentHashMap<Kind, List<Item>>()
     private val cats = ConcurrentHashMap<Kind, List<Category>>()
     private val items = ConcurrentHashMap<Kind, List<Item>>()
     private val byKey = ConcurrentHashMap<String, Item>()
@@ -36,11 +39,34 @@ object Repo {
     fun api(): XtreamApi = api ?: XtreamApi(Prefs.server, Prefs.user, Prefs.pass).also { api = it }
 
     fun isLoaded(kind: Kind) = items.containsKey(kind)
+    /** Contenu affiché (selon le filtre de langue de l'onglet). */
     fun list(kind: Kind): List<Item> = items[kind].orEmpty()
+    /** Tout le contenu, sans filtre (recherche). */
+    fun all(kind: Kind): List<Item> = allItems[kind].orEmpty()
     fun categories(kind: Kind): List<Category> = cats[kind].orEmpty()
     fun categoryName(kind: Kind, id: String): String? = cats[kind]?.firstOrNull { it.id == id }?.name
     fun find(key: String): Item? = byKey[key]
     fun cachedDetails(item: Item): Details? = details.get(item.key)
+
+    /** Comme [load], mais renvoie tout le contenu, sans le filtre de langue (recherche). */
+    suspend fun loadAll(kind: Kind): List<Item> { load(kind); return all(kind) }
+
+    /** Change le filtre de langue d'un onglet : la vue est recalculée, rien n'est retéléchargé. */
+    fun setFrenchOnly(kind: Kind, on: Boolean) {
+        Prefs.setFrenchOnly(kind, on)
+        applyFilter(kind)
+        generation++
+    }
+
+    private fun applyFilter(kind: Kind) {
+        val list = allItems[kind] ?: return
+        val c = allCats[kind].orEmpty()
+        val (kept, keptCats) = if (Prefs.frenchOnly(kind)) FrenchFilter.apply(list, c) else list to c
+        android.util.Log.i("FluxAPI", "$kind : ${kept.size}/${list.size} affichés")
+        cats[kind] = keptCats
+        items[kind] = kept
+        top10.remove(kind)
+    }
 
     suspend fun load(kind: Kind): List<Item> {
         items[kind]?.let { return it }
@@ -52,13 +78,11 @@ object Repo {
                 val c = try { a.categories(kind) } catch (e: IOException) {
                     android.util.Log.w("FluxAPI", "catégories $kind indisponibles", e); emptyList()
                 }
-                // Réglage « Français uniquement » : moins de contenu en mémoire, écrans plus rapides
-                val (kept, keptCats) = if (Prefs.frenchOnly) FrenchFilter.apply(list, c) else list to c
-                if (kept.size != list.size) android.util.Log.i("FluxAPI", "$kind : ${kept.size}/${list.size} gardés (français)")
-                kept.forEach { byKey[it.key] = it }
-                cats[kind] = keptCats
-                items[kind] = kept
-                kept
+                list.forEach { byKey[it.key] = it }
+                allCats[kind] = c
+                allItems[kind] = list
+                applyFilter(kind)
+                items.getValue(kind)
             }
         }
     }
@@ -117,7 +141,7 @@ object Repo {
 
     /** Vide seulement la mémoire : les écrans se rechargent depuis les fichiers déjà téléchargés. */
     fun dropMemory() {
-        items.clear(); cats.clear(); byKey.clear(); details.evictAll(); top10.clear()
+        items.clear(); cats.clear(); allItems.clear(); allCats.clear(); byKey.clear(); details.evictAll(); top10.clear()
         generation++
     }
 

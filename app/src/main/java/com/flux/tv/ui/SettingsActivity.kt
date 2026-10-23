@@ -18,6 +18,7 @@ import com.flux.tv.data.DnsDiagnostic
 import com.flux.tv.data.DnsMode
 import com.flux.tv.data.DohProvider
 import com.flux.tv.data.FluxDns
+import com.flux.tv.data.Kind
 import com.flux.tv.data.Prefs
 import com.flux.tv.data.XtreamApi
 import com.flux.tv.data.Repo
@@ -63,9 +64,13 @@ class SettingsActivity : BaseActivity() {
         row(R.drawable.ic_next, "Lecture automatique de l'épisode suivant", onOff(Prefs.autoplayNext)) { v ->
             Prefs.autoplayNext = !Prefs.autoplayNext; v.text = onOff(Prefs.autoplayNext)
         }
-        row(R.drawable.ic_live, "Langue du contenu", langLabel()) { v ->
-            Prefs.frenchOnly = !Prefs.frenchOnly; v.text = langLabel()
-            Repo.dropMemory()   // les écrans se rechargent avec le nouveau tri
+        row(R.drawable.ic_live, "Langue du contenu (tous les onglets)", langLabel()) { v ->
+            val on = !Kind.values().all { Prefs.frenchOnly(it) }
+            Kind.values().forEach { Repo.setFrenchOnly(it, on) }
+            v.text = langLabel()
+        }
+        row(R.drawable.ic_settings, "Calibrer l'écran", "Ajuster les bords à votre téléviseur") {
+            startActivity(Intent(this, CalibrationActivity::class.java))
         }
         row(R.drawable.ic_subtitles, "Taille des sous-titres", subLabel()) { v ->
             Prefs.subtitleSize = (Prefs.subtitleSize + 1) % 3; v.text = subLabel()
@@ -183,7 +188,11 @@ class SettingsActivity : BaseActivity() {
         return valueView
     }
 
-    private fun langLabel() = if (Prefs.frenchOnly) "Français uniquement (VF)" else "Toutes les langues"
+    private fun langLabel() = when {
+        Kind.values().all { Prefs.frenchOnly(it) } -> "Français (VF)"
+        Kind.values().none { Prefs.frenchOnly(it) } -> "Toutes les langues"
+        else -> "Selon l'onglet"
+    }
     private fun onOff(b: Boolean) = if (b) "Activé" else "Désactivé"
     private fun subLabel() = arrayOf("Petits", "Moyens", "Grands")[Prefs.subtitleSize.coerceIn(0, 2)]
     private fun formatLabel() = if (Prefs.liveFormat == "ts") "MPEG-TS (recommandé)" else "HLS (m3u8)"

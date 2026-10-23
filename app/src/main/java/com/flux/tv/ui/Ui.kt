@@ -16,6 +16,7 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import android.widget.ImageView
@@ -76,9 +77,33 @@ object Session {
 
 /** Plein écran immersif sur tous les écrans. */
 open class BaseActivity : AppCompatActivity() {
+    /** false pour un écran qui gère lui-même les bords (calibrage). */
+    protected open val overscan = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         immersive()
+    }
+
+    override fun onContentChanged() {
+        super.onContentChanged()
+        if (overscan) applyOverscan()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (overscan) applyOverscan()   // après un nouveau calibrage
+    }
+
+    /** Marges réglées dans « Calibrer l'écran » : tout l'écran rentre dans la zone visible du téléviseur. */
+    private fun applyOverscan() {
+        val content = findViewById<ViewGroup>(android.R.id.content) ?: return
+        val dm = resources.displayMetrics
+        val x = dm.widthPixels * Prefs.overscanX / 1000
+        val y = dm.heightPixels * Prefs.overscanY / 1000
+        if (content.paddingLeft == x && content.paddingTop == y) return
+        content.setPadding(x, y, x, y)
+        content.setBackgroundColor(Color.BLACK)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

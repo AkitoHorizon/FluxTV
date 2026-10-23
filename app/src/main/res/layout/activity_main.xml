@@ -130,6 +130,12 @@
                     <TextView style="@style/PillText" android:text="Plus d'infos" />
                 </LinearLayout>
 
+                <!-- Menu déroulant de langue de l'onglet (Français / Toutes) -->
+                <LinearLayout android:id="@+id/btnLang" style="@style/PillBtn" android:visibility="gone">
+                    <ImageView style="@style/PillIcon" android:src="@drawable/ic_subtitles" />
+                    <TextView android:id="@+id/btnLangText" style="@style/PillText" android:text="Français ▾" />
+                </LinearLayout>
+
                 <LinearLayout
                     android:id="@+id/dots"
                     android:layout_width="wrap_content"
